@@ -134,12 +134,12 @@ for(ifile in ifiles) {
 # write X and Y intensities
 cat(" -Writing X and Y intensities\n")
 qtl2convert::write2csv(cbind(marker=rownames(cXint), cXint),
-                       paste0(ostem, "_chrXint.csv"),
-                       paste(ostem, "X chr intensities"),
+                       "chrXint.csv",
+                       "X chr intensities",
                        overwrite=TRUE)
 qtl2convert::write2csv(cbind(marker=rownames(cYint), cYint),
-                       paste0(ostem, "_chrYint.csv"),
-                       paste(ostem, "Y chr intensities"),
+                       "chrYint.csv",
+                       "Y chr intensities",
                        overwrite=TRUE)
 
 # write data to chromosome-specific files
@@ -151,8 +151,8 @@ for(chrom in c(1:19,"X","Y","M")) {
       dplyr::select(marker)
     g <- full_geno[rownames(full_geno) %in% mar$marker,]
     qtl2convert::write2csv(cbind(marker=rownames(g), g),
-                           paste0(ostem, "_geno", chrom, ".csv"),
-                           paste0(ostem, " genotypes for chr ", chrom),
+                           paste0("geno", chrom, ".csv"),
+                           paste0("genotypes for chr ", chrom),
                            overwrite=TRUE)
 }
 
@@ -194,7 +194,7 @@ result <- result[as.numeric(t(cbind(seq_along(snps$`SNP Name`), seq_along(snps$`
 rownames(result) <- 1:nrow(result)
 
 # write to fst file, maximally compressed
-write.fst(result, "data/DO4WC_intensities.fst", compress=100)
+write_fst(result, "intensities.fst", compress=100)
 
 
 
