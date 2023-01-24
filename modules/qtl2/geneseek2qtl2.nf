@@ -19,6 +19,6 @@ process GS_TO_QTL2 {
   log.info "----- Convert FinalReport File to R/qtl2 Genotypes and Intensities -----"
 
   """
-  Rscript --vanilla ${projectDir}/bin/scripts/qtl2/geneseek2qtl2.R ${alleleCodes} ${params.sample_folder}/${FinalReport}
+  Rscript --vanilla ${projectDir}/bin/scripts/qtl2/geneseek2qtl2.R ${alleleCodes} ${params.sample_folder}/${FinalReport} ${params.sample_folder}
   """
 }

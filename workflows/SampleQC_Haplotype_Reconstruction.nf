@@ -36,5 +36,5 @@ FinalReports = Channel.fromPath("${params.sample_folder}/FinalReport*")
 
 // QC and Haplotype Reconstruction Workflow
 workflow QC_HAP {
-    
+    GS_TO_QTL2(FinalReports)
 }
