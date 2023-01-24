@@ -15,21 +15,24 @@ library(parallel)
 library(dplyr)
 library(magrittr)
 library(fst)
-
+args <- commandArgs(trailingOnly = TRUE)
 # file containing allele codes for GigaMUGA data
 #   - from GM_processed_files.zip, https://doi.org/10.6084/m9.figshare.5404759
-codefile <- "data/GM/GM_allelecodes.csv"
+# codefile <- "data/GM/GM_allelecodes.csv"
+codefile <- args[1]
 
 # input files with GigaMUGA genotypes
 #  - can be a single file or a vector of multiple files
 #  - if samples appear in multiple files, the genotypes in later files
 #    will be used in place of genotypes in earlier files
 #  - files can be gzipped (".gz" extension)
-ifiles <- "data/neogen/Daniel_Gatti_MURGIGV01_20221006_FinalReport.zip"
+# ifiles <- "data/neogen/Daniel_Gatti_MURGIGV01_20221006_FinalReport.zip"
+ifiles <- args[2]
 
 # file "stem" for output files
 # output files will be like "gm4qtl2_geno19.csv"
-ostem <- "data/all_genos/DO_4WC"
+# ostem <- "data/all_genos/DO_4WC"
+ostem <- paste0(args[3],"/")
 
 # version of data.table::fread() where data.table=FALSE is the default
 myfread <- function(filename, data.table=FALSE, ...) data.table::fread(filename, data.table=data.table, ...)
