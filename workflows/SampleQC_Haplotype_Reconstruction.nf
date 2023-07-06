@@ -32,10 +32,15 @@ include {GS_TO_QTL2} from "${projectDir}/modules/qtl2/geneseek2qtl2"
 
 chrs = Channel.of(1..19,'X')
 FinalReports = Channel.fromPath("${params.sample_folder}/*FinalReport*")
-FinalReports.view()
 
 
 // QC and Haplotype Reconstruction Workflow
 workflow QC_HAP {
+    
+    // Process FinalReport File
     GS_TO_QTL2(FinalReports)
+
+    // Write control file
+    GS_TO_QTL2.out.qtl2genos
+
 }
