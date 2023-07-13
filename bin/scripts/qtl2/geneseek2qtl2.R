@@ -15,10 +15,22 @@ library(parallel)
 library(dplyr)
 library(magrittr)
 library(fst)
+# library(microbenchmark)
+################################################################################
+# Parse Neogen FinalReport files and create intensity files and genotypes.
+#
+# Sam Widmayer
+# samuel.widmayer@jax.org
+# 20230706
+################################################################################ 
 args <- commandArgs(trailingOnly = TRUE)
+
+# test dir
+# test_dir <- "/fastscratch/QC_HAP_outputDir/work/f3/aa7dd51d95747edb722c8e54434471"
+
 # file containing allele codes for GigaMUGA data
 #   - from GM_processed_files.zip, https://doi.org/10.6084/m9.figshare.5404759
-# codefile <- "data/GM/GM_allelecodes.csv"
+# codefile <- "/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/bin/CC_DO_data/GM_allelecodes.csv"
 codefile <- args[1]
 
 # input files with GigaMUGA genotypes
@@ -26,17 +38,13 @@ codefile <- args[1]
 #  - if samples appear in multiple files, the genotypes in later files
 #    will be used in place of genotypes in earlier files
 #  - files can be gzipped (".gz" extension)
-# ifiles <- "data/neogen/Daniel_Gatti_MURGIGV01_20221006_FinalReport.zip"
+# ifiles <- file.path(test_dir,"finalreportlist.txt")
 ifiles <- args[2]
 
-# file "stem" for output files
-# output files will be like "gm4qtl2_geno19.csv"
-# ostem <- "data/all_genos/DO_4WC"
-ostem <- paste0(args[3],"/")
-
-# version of data.table::fread() where data.table=FALSE is the default
-myfread <- function(filename, data.table=FALSE, ...) data.table::fread(filename, data.table=data.table, ...)
-
+# metadata
+metadata <- args[3]
+# metadata <- "/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/do_oocyte/covar_files/DO_covar_nf.csv"
+meta <- read.csv(metadata)
 
 # read genotype codes
 codes <- data.table::fread(codefile, skip = 3)
@@ -44,25 +52,67 @@ codes <- data.table::fread(codefile, skip = 3)
 full_geno <- NULL
 cXint <- cYint <- NULL
 
+finalreports <- read.table(ifiles)
+ifiles <- c(as.matrix(t(finalreports)))
+# ifiles <- paste(test_dir,c(as.matrix(t(finalreports))), sep = "/")
+
 for(ifile in ifiles) {
     cat(" -File:", ifile, "\n")
-    rezip <- FALSE
-    if(!file.exists(ifile)) {
-        cat(" -Unzipping file\n")
-        system(paste("gunzip", ifile))
-        rezip <- TRUE
-    }
+    # rezip <- FALSE
+    # if(!file.exists(ifile)) {
+    #     cat(" -Unzipping file\n")
+    #     system(paste("gunzip", ifile))
+    #     rezip <- TRUE
+    # }
 
     cat(" -Reading data\n")
-    # g <- data.table::fread(ifile, skip = 9)
-    g <- vroom::vroom(file = ifile, skip = 9,
-                      num_threads = parallel::detectCores())
-    g %<>%
-        dplyr::filter(`SNP Name` %in% codes$marker)
     
-    # subset to the markers in the codes object
-    # g <- g[g[,"SNP Name"] %in% codes[,"marker"],]
-
+    # benchmarking reading performance
+    # microbenchmark::microbenchmark(unit = "milliseconds",
+    #   g <- data.table::fread(paste0('unzip -p ',ifile),
+    #                          skip = 9, 
+    #                          nrows = 100),
+    #   g <- vroom::vroom(file = ifile, skip = 9,
+    #                     n_max = 100,
+    #                     num_threads = parallel::detectCores()/2)
+    # )
+    # g <- data.table::fread(paste0('unzip -p ',ifile),
+    #                        skip = 9, 
+    #                        nrows = 100)
+    g <- vroom::vroom(file = ifile, skip = 9,
+                      # n_max = 100000,
+                      num_threads = parallel::detectCores()/2)
+    
+    
+    meta_sample_names <- unique(meta$id)
+    sample_names <- unique(g$`Sample ID`)
+    
+    name_check <- Reduce(rbind, 
+           lapply(meta_sample_names, 
+                  function(x) data.frame(x, length(grep(x = sample_names, 
+                                                        pattern = x)))))
+    colnames(name_check) <- c("sample","matches")
+    
+    # test if *some* samples from metadata are in the finalreport file
+    
+    if(!1 %in% unique(name_check$matches)){
+      next
+    }
+    
+    if(0 %in% unique(name_check$matches)){
+      cat(paste0(" NOTE: Some samples in supplied metadata not present in", ifile,"\n"))
+      cat(paste0(" Filtering", ifile," to matching samples\n"))
+      g %<>%
+        dplyr::filter(`SNP Name` %in% codes$marker,
+                      `Sample ID` %in% name_check$sample)
+      cat(paste0("Matching samples:\n"))
+      print(unique(g$`Sample ID`))
+    } else {
+      cat(paste0(" NOTE: All samples in supplied metadata present in", ifile,"\n"))
+      g %<>%
+        dplyr::filter(`SNP Name` %in% codes$marker)
+    }
+    
     # NOTE: may need to revise the IDs in the 2nd column
     samples <- unique(g$`Sample ID`)
 
@@ -75,7 +125,7 @@ for(ifile in ifiles) {
     for(i in seq(along=samples)) {
         if(i==round(i,-1)) cat(" --Sample", i, "of", length(samples), "\n")
         wh <- (g$`Sample ID`==samples[i])
-        geno[g[wh,]$`SNP Name`,i] <- paste0(g[wh,]$`Allele1 - Forward`, 
+        geno[g[wh,]$`SNP Name`,i] <- paste0(g[wh,]$`Allele1 - Forward`,
                                             g[wh,]$`Allele2 - Forward`)
     }
 
@@ -97,7 +147,7 @@ for(ifile in ifiles) {
     # gY <- g[g[,"SNP Name"] %in% codes[codes$chr=="Y","marker"],]
     gY <- g %>%
         dplyr::filter(`SNP Name` %in% codes[which(codes$chr == "Y"),]$marker)
-    
+
     #### SAFE STOPPING POINT
     cX <- matrix(nrow=sum(codes$chr=="X"),
                  ncol=length(samples))
@@ -105,13 +155,13 @@ for(ifile in ifiles) {
     cY <- matrix(nrow=sum(codes$chr=="Y"),
                  ncol=length(samples))
     dimnames(cY) <- list(codes[which(codes$chr == "Y"),]$marker, samples)
-    
+
     for(i in seq(along=samples)) {
         if(i==round(i,-1)) cat(" --Sample", i, "of", length(samples), "\n")
         wh <- (gX[,"Sample ID"]==samples[i])
         cX[gX[wh,]$`SNP Name`,i] <- (gX$X[wh] + gX$Y[wh])/2
         # cX[gX[wh,"SNP Name"],i] <- (gX$X[wh] + gX$Y[wh])/2
-        
+
         wh <- (gY[,"Sample ID"]==samples[i])
         cY[gY[wh,]$`SNP Name`,i] <- (gY$X[wh] + gY$Y[wh])/2
         # cY[gY[wh,"SNP Name"],i] <- (gY$X[wh] + gY$Y[wh])/2
@@ -125,10 +175,10 @@ for(ifile in ifiles) {
         cYint <- qtl2convert::cbind_smother(cYint, cY)
     }
 
-    if(rezip) {
-        cat(" -Rezipping file\n")
-        system(paste("gzip", ifile))
-    }
+    # if(rezip) {
+    #     cat(" -Rezipping file\n")
+    #     system(paste("gzip", ifile))
+    # }
 }
 
 # write X and Y intensities
@@ -162,7 +212,7 @@ dat <- vector("list", length(ifiles))
 for(i in seq_along(ifiles)) {
   # zipfile <- tempfile()
   # download.file(ifiles[i], zipfile)
-  unzipped <- unzip(ifiles)
+  unzipped <- unzip(ifiles[i])
   dat[[i]] <- vroom::vroom(file = unzipped, skip = 9,
                num_threads = parallel::detectCores())
   # unlink(zipfile)

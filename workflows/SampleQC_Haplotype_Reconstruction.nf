@@ -31,7 +31,7 @@ include {GS_TO_QTL2} from "${projectDir}/modules/qtl2/geneseek2qtl2"
 // read_ch.ifEmpty{ exit 1, "ERROR: No Files Found in Path: ${params.sample_folder} Matching Pattern: ${params.pattern}"}
 
 chrs = Channel.of(1..19,'X')
-FinalReports = Channel.fromPath("${params.sample_folder}/*FinalReport*")
+FinalReports = Channel.fromPath("${params.sample_folder}/neogen_finalreports/*FinalReport*").collect()
 
 
 // QC and Haplotype Reconstruction Workflow
@@ -41,6 +41,6 @@ workflow QC_HAP {
     GS_TO_QTL2(FinalReports)
 
     // Write control file
-    GS_TO_QTL2.out.qtl2genos
+    GS_TO_QTL2.out.qtl2genos.view()
 
 }

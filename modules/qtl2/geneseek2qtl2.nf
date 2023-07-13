@@ -1,8 +1,8 @@
 process GS_TO_QTL2 {
 
   cpus 16
-  memory 15.GB
-  time '00:30:00'
+  memory 100.GB
+  time '05:00:00'
 
   container 'docker://sjwidmay/lcgbs_hr:qtl2_et_al'
 
@@ -21,6 +21,11 @@ process GS_TO_QTL2 {
   log.info "----- Convert FinalReport File to R/qtl2 Genotypes and Intensities -----"
 
   """
-  Rscript --vanilla ${projectDir}/bin/scripts/qtl2/geneseek2qtl2.R ${params.CCDOalleleCodes} ${projectDir}/${params.sample_folder}/${FinalReport} ${params.sample_folder}
+  echo ${FinalReport} > finalreportlist.txt
+
+  Rscript --vanilla ${projectDir}/bin/scripts/qtl2/geneseek2qtl2.R \
+	${params.CCDOalleleCodes} \
+	finalreportlist.txt \
+	${projectDir}/${params.covar}
   """
 }
