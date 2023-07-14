@@ -11,7 +11,7 @@ nextflow.enable.dsl=2
 // include {param_log} from "${projectDir}/bin/log/stitch.nf"
 
 include {GS_TO_QTL2} from "${projectDir}/modules/qtl2/geneseek2qtl2"
-// include {WRITE_CONTROL_FILE} from "${projectDir}/modules/qtl2/writeControlFile"
+include {WRITE_CROSS} from "${projectDir}/modules/qtl2/write_cross"
 // include {SAMPLE_QC} from "${projectDir}/modules/qtl2/sampleQC"
 // include {CALC_GENO_PROBS} from "${projectDir}/modules/qtl2/calcGenoProbs"
 // include {PLOT_GENO_PROBS} from "${projectDir}/modules/qtl2/plotGenoProbs"
@@ -44,9 +44,7 @@ workflow QC_HAP {
     GS_TO_QTL2(FinalReports)
 
     // Write control file
-    GS_TO_QTL2.out.qtl2genos.view()
-    GM_foundergenos.view()
-    GM_gmaps.view()
-    GM_pmaps.view()
+    cross_elements = GS_TO_QTL2.out.qtl2genos.concat(GM_foundergenos,GM_gmaps,GM_pmaps)
+    WRITE_CROSS(cross_elements)
 
 }
