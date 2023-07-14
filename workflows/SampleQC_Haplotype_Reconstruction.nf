@@ -32,6 +32,9 @@ include {GS_TO_QTL2} from "${projectDir}/modules/qtl2/geneseek2qtl2"
 
 chrs = Channel.of(1..19,'X')
 FinalReports = Channel.fromPath("${params.sample_folder}/neogen_finalreports/*FinalReport*").collect()
+GM_foundergenos = Channel.fromPath("${params.CCDOdataDir}/GM_foundergeno*").collect()
+GM_gmaps = Channel.fromPath("${params.CCDOdataDir}/GM_gmap*").collect()
+GM_pmaps = Channel.fromPath("${params.CCDOdataDir}/GM_pmap*").collect()
 
 
 // QC and Haplotype Reconstruction Workflow
@@ -42,5 +45,8 @@ workflow QC_HAP {
 
     // Write control file
     GS_TO_QTL2.out.qtl2genos.view()
+    GM_foundergenos.view()
+    GM_gmaps.view()
+    GM_pmaps.view()
 
 }
