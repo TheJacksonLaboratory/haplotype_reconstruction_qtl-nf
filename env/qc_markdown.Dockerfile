@@ -30,6 +30,7 @@ RUN R -e "install.packages('knitr', repos='http://cran.us.r-project.org', depend
 RUN R -e "install.packages('png', repos='http://cran.us.r-project.org', dependencies = TRUE)"
 RUN R -e "install.packages('rmarkdown', repos='http://cran.us.r-project.org', dependencies = TRUE)"
 RUN R -e "install.packages('pandoc', repos='http://cran.us.r-project.org', dependencies = TRUE)"
+RUN R -e "install.packages('remotes', repos='http://cran.us.r-project.org')"
 RUN R -e "remotes::install_github('rqtl/qtl2')"
 RUN R -e "remotes::install_github('kbroman/broman')"
 RUN R -e "remotes::install_github('kbroman/qtlcharts')"
