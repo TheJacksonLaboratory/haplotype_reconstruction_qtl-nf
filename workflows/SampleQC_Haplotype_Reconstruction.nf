@@ -10,9 +10,7 @@ nextflow.enable.dsl=2
 
 include {GS_TO_QTL2} from "${projectDir}/modules/qtl2/geneseek2qtl2"
 include {WRITE_CROSS} from "${projectDir}/modules/qtl2/write_cross"
-// include {SAMPLE_QC} from "${projectDir}/modules/qtl2/sampleQC"
-// include {CALC_GENO_PROBS} from "${projectDir}/modules/qtl2/calcGenoProbs"
-// include {PLOT_GENO_PROBS} from "${projectDir}/modules/qtl2/plotGenoProbs"
+include {SAMPLE_MARKER_QC} from "${projectDir}/modules/qtl2/sample_marker_QC"
 
 // hold for including a help page if help if needed
 // if (params.help){
@@ -26,7 +24,6 @@ include {WRITE_CROSS} from "${projectDir}/modules/qtl2/write_cross"
 
 // save for starting point
 // check files for errors
-// read_ch.ifEmpty{ exit 1, "ERROR: No Files Found in Path: ${params.sample_folder} Matching Pattern: ${params.pattern}"}
 
 chrs = Channel.of(1..19,'X')
 FinalReports = Channel.fromPath("${params.sample_folder}/neogen_finalreports/*FinalReport*").collect()
@@ -45,9 +42,11 @@ workflow QC_HAP {
 					.mix(GM_foundergenos,GM_gmaps,GM_pmaps)
 					.flatten()
 					.collect()
-    // cross_elements.view()
     WRITE_CROSS(cross_elements)
 
-    WRITE_CROSS.out.cross.combine(GS_TO_QTL2.out.qtl2intsfst).view()
+
+    // Perform initial sample QC
+    sample_QC_files = WRITE_CROSS.out.cross.combine(GS_TO_QTL2.out.qtl2intsfst)
+    SAMPLE_MARKER_QC(sample_QC_files)
 
 }

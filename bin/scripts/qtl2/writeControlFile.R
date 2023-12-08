@@ -7,7 +7,7 @@ library(qtl2convert)
 #
 # Sam Widmayer
 # samuel.widmayer@jax.org
-# 20230714
+# 20231208
 ################################################################################ 
 # test_dir <- "/fastscratch/QC_HAP_outputDir/work/b2/23a342cd54730a19c9efab3e958378"
 # setwd(test_dir)
