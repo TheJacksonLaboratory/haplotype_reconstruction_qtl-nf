@@ -3,8 +3,6 @@ nextflow.enable.dsl=2
 
 // Nextflow pipeline for sample QC and haplotype reconstruction
 // on genetically diverse mice
-// General flow:
-// 1) 
 
 // import modules
 // include {help} from "${projectDir}/bin/help/wgs.nf"
@@ -36,7 +34,6 @@ GM_foundergenos = Channel.fromPath("${params.CCDOdataDir}/GM_foundergeno*").coll
 GM_gmaps = Channel.fromPath("${params.CCDOdataDir}/GM_gmap*").collect()
 GM_pmaps = Channel.fromPath("${params.CCDOdataDir}/GM_pmap*").collect()
 
-
 // QC and Haplotype Reconstruction Workflow
 workflow QC_HAP {
     
@@ -44,7 +41,13 @@ workflow QC_HAP {
     GS_TO_QTL2(FinalReports)
 
     // Write control file
-    cross_elements = GS_TO_QTL2.out.qtl2genos.concat(GM_foundergenos,GM_gmaps,GM_pmaps)
+    cross_elements = GS_TO_QTL2.out.qtl2genos
+					.mix(GM_foundergenos,GM_gmaps,GM_pmaps)
+					.flatten()
+					.collect()
+    // cross_elements.view()
     WRITE_CROSS(cross_elements)
+
+    WRITE_CROSS.out.cross.combine(GS_TO_QTL2.out.qtl2intsfst).view()
 
 }
