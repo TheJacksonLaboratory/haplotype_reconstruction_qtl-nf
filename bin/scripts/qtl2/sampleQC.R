@@ -2,8 +2,6 @@
 library(qtl2)
 library(dplyr)
 library(ggplot2)
-library(qtlcharts)
-library(broman)
 library(fst)
 ################################################################################
 # Perform marker and sample QC using cross object and intensities upstream in 
@@ -13,18 +11,18 @@ library(fst)
 # samuel.widmayer@jax.org
 # 20231208
 ################################################################################ 
-test_dir <- "/fastscratch/QC_HAP_outputDir/work/b8/fdfd8ce7bdd497445041b0ac27a8b7"
-setwd(test_dir)
+# test_dir <- "/fastscratch/QC_HAP_outputDir/work/b8/fdfd8ce7bdd497445041b0ac27a8b7"
+# setwd(test_dir)
 args <- commandArgs(trailingOnly = TRUE)
 
 # import cross object
-# cross <- args[1]
-cross <- "/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/do_oocyte/geno_probs/cross.RData"
+cross <- args[1]
+# cross <- "/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/do_oocyte/geno_probs/cross.RData"
 load(cross)
 
 # import intensities
-# intensities <- args[2]
-intensities <- "/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/do_oocyte/qtl2genos/intensities.fst"
+intensities <- args[2]
+# intensities <- "/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/do_oocyte/qtl2genos/intensities.fst"
 print(intensities)
 
 
@@ -59,12 +57,6 @@ int <- fst::read.fst(intensities)
 int <- int[seq(1, nrow(int), by=2),-(1:2)] + int[-seq(1, nrow(int), by=2),-(1:2)]
 int <- int[,which(colnames(int) %in% qtl2::ind_ids(cross))]
 
-# Interactive plot of DO array intensities per sample
-n <- names(sort(percent_missing, decreasing=TRUE))
-iboxplot <- iboxplot(log10(t(int)+1),
-                        orderByMedian=TRUE,
-                        chartOpts=list(ylab="log10(SNP intensity + 1)"))
-
 ## Genotype Frequencies
 g <- do.call("cbind", cross$geno[1:19])
 fg <- do.call("cbind", cross$founder_geno[1:19])
@@ -75,58 +67,68 @@ g <- g[,colSums(fg==0)==0]
 # find markers with missing genotypes in the founders
 fg <- fg[,colSums(fg==0)==0]
 fgn <- colSums(fg==3)
-gf_ind <- vector("list", 4)
-for(i in 1:4) {
-  gf_ind[[i]] <- t(apply(g[,fgn==i], 1, function(a) table(factor(a, 1:3))/sum(a != 0)))
-}
 
-# plot genotype frequencies
-par(mfrow=c(2,2), mar=c(0.6, 0.6, 2.6, 0.6))
-for(i in 1:4) {
-  triplot(c("AA", "AB", "BB"), main=paste0("MAF = ", i, "/8"))
-  tripoints(gf_ind[[i]], pch=21, bg="lightblue")
-  tripoints(c((1-i/8)^2, 2*i/8*(1-i/8), (i/8)^2), pch=21, bg="violetred")
+# save objects to send to markdown
+save(fg, # markers with missing genotypes in the founders
+     g,  # markers with missing genotypes in a sample
+     cg, # sample duplicates
+     int, # marker intensities
+     percent_missing, # percent of missing genotypes per sample
+     file = "QC_1.RData")
 
-  if(i>=3) { # label mouse with lowest het
-    wh <- which(gf_ind[[i]][,2] == min(gf_ind[[i]][,2]))
-    tritext(gf_ind[[i]][wh,,drop=FALSE] + c(0.02, -0.02, 0),
-            names(wh), adj=c(0, 1))
-  }
+# gf_ind <- vector("list", 4)
+# for(i in 1:4) {
+#   gf_ind[[i]] <- t(apply(g[,fgn==i], 1, function(a) table(factor(a, 1:3))/sum(a != 0)))
+# }
 
-  # label other mice
-  if(i==1) {
-    lab <- rownames(gf_ind[[i]])[gf_ind[[i]][,2]>0.3]
-  }
-  else if(i==2) {
-    lab <- rownames(gf_ind[[i]])[gf_ind[[i]][,2]>0.48]
-  }
-  else if(i==3) {
-    lab <- rownames(gf_ind[[i]])[gf_ind[[i]][,2]>0.51]
-  }
-  else if(i==4) {
-    lab <- rownames(gf_ind[[i]])[gf_ind[[i]][,2]>0.6]
-  }
+# Interactive plot of DO array intensities per sample
+# n <- names(sort(percent_missing, decreasing=TRUE))
+# iboxplot <- iboxplot(log10(t(int)+1),
+#                      orderByMedian=TRUE,
+#                      chartOpts=list(ylab="log10(SNP intensity + 1)"))
 
-  for(ind in lab) {
-    if(grepl("^F", ind) && i != 3) {
-      tritext(gf_ind[[i]][ind,,drop=FALSE] + c(-0.01, 0, +0.01), ind, adj=c(1,0.5))
-    } else {
-      tritext(gf_ind[[i]][ind,,drop=FALSE] + c(0.01, 0, -0.01), ind, adj=c(0,0.5))
-    }
-  }
-}
-
-
-# ## Reading in sex chromosome intensities
-# xint <- qtl2::read_csv_numer(filename = "data/all_genos/chrXint.csv")
-# yint <- qtl2::read_csv_numer(filename = "data/all_genos/chrYint.csv")
+# # plot genotype frequencies
+# par(mfrow=c(2,2), mar=c(0.6, 0.6, 2.6, 0.6))
+# for(i in 1:4) {
+#   triplot(c("AA", "AB", "BB"), main=paste0("MAF = ", i, "/8"))
+#   tripoints(gf_ind[[i]], pch=21, bg="lightblue")
+#   tripoints(c((1-i/8)^2, 2*i/8*(1-i/8), (i/8)^2), pch=21, bg="violetred")
 # 
-# DOxint <- xint[,colnames(xint)[which(colnames(xint) %in% metadata$sample)]]
-# DOyint <- yint[,colnames(yint)[which(colnames(yint) %in% metadata$sample)]]
+#   if(i>=3) { # label mouse with lowest het
+#     wh <- which(gf_ind[[i]][,2] == min(gf_ind[[i]][,2]))
+#     tritext(gf_ind[[i]][wh,,drop=FALSE] + c(0.02, -0.02, 0),
+#             names(wh), adj=c(0, 1))
+#   }
+# 
+#   # label other mice
+#   if(i==1) {
+#     lab <- rownames(gf_ind[[i]])[gf_ind[[i]][,2]>0.3]
+#   }
+#   else if(i==2) {
+#     lab <- rownames(gf_ind[[i]])[gf_ind[[i]][,2]>0.48]
+#   }
+#   else if(i==3) {
+#     lab <- rownames(gf_ind[[i]])[gf_ind[[i]][,2]>0.51]
+#   }
+#   else if(i==4) {
+#     lab <- rownames(gf_ind[[i]])[gf_ind[[i]][,2]>0.6]
+#   }
+# 
+#   for(ind in lab) {
+#     if(grepl("^F", ind) && i != 3) {
+#       tritext(gf_ind[[i]][ind,,drop=FALSE] + c(-0.01, 0, +0.01), ind, adj=c(1,0.5))
+#     } else {
+#       tritext(gf_ind[[i]][ind,,drop=FALSE] + c(0.01, 0, -0.01), ind, adj=c(0,0.5))
+#     }
+#   }
+# }
+
+# xint <- xint[,colnames(xint)[which(colnames(xint) %in% metadata$sample)]]
+# yint <- yint[,colnames(yint)[which(colnames(yint) %in% metadata$sample)]]
 # sex <- cross$is_female
 # sex <- dplyr::if_else(condition = sex == TRUE, true = "F", false = "M")
 # names(sex) <- names(cross$is_female)
-# 
+
 # if(length(levels(as.factor(sex))) == 1){
 #   print("Skipping t-test; only 1 level to t-test")
 #   DOxint_ave <- colMeans(DOxint, na.rm=TRUE)
@@ -171,9 +173,3 @@ for(i in 1:4) {
 #          y = "Average Y chr intensity")
 #   plotly::ggplotly(DOsexcheck_plot, tooltip = "label")
 # }
-# 
-# 
-
-# # save(cross, file = "data/cross.RData")
-# 
-# 

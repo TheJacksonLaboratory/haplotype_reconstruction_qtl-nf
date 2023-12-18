@@ -11,6 +11,7 @@ nextflow.enable.dsl=2
 include {GS_TO_QTL2} from "${projectDir}/modules/qtl2/geneseek2qtl2"
 include {WRITE_CROSS} from "${projectDir}/modules/qtl2/write_cross"
 include {SAMPLE_MARKER_QC} from "${projectDir}/modules/qtl2/sample_marker_QC"
+include {GENOPROBS_QC} from "${projectDir}/modules/qtl2/genoprobs_qc.nf"
 
 // hold for including a help page if help if needed
 // if (params.help){
@@ -46,7 +47,14 @@ workflow QC_HAP {
 
 
     // Perform initial sample QC
-    sample_QC_files = WRITE_CROSS.out.cross.combine(GS_TO_QTL2.out.qtl2intsfst)
+    sample_QC_files = WRITE_CROSS.out.cross
+					.combine(GS_TO_QTL2.out.qtl2intsfst)
+
     SAMPLE_MARKER_QC(sample_QC_files)
+
+    // Initial haplotype reconstruction for genotyping errors and crossover estimation
+    GENOPROBS_QC(WRITE_CROSS.out.cross)
+
+    GENOPROBS_QC.out.genoprob_qc.combine(GS_TO_QTL2.out.qtl2ints).view()
 
 }

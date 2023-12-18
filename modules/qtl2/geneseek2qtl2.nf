@@ -1,8 +1,10 @@
 process GS_TO_QTL2 {
 
-  cpus 16
-  memory 100.GB
-  time '05:00:00'
+  cpus 1
+  memory {100.GB * task.attempt}
+  time {5.hour * task.attempt}
+  errorStrategy 'retry' 
+  maxRetries 3
 
   container 'docker://sjwidmay/lcgbs_hr:qtl2_et_al'
 
