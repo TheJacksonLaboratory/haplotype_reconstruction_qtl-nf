@@ -1,0 +1,172 @@
+---
+title: "haplotype_reconstruction_qtl-nf: Quality Control Report"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    toc_collapsed: true
+    toc_depth: 3
+    code_folding: hide
+date: "`r format(Sys.time(), '%m-%d-%Y')`"
+params:
+  sampleDir: "null"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, dev = "png", fig.width = 8, fig.height = 6)
+library(purrr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(plotly)
+library(knitr)
+library(qtl2)
+library(broman)
+library(qtlcharts)
+summaryPlotTheme <- theme_bw(base_size = 14) + 
+  theme(panel.grid = element_blank(),
+        axis.title = element_text(colour = "black"))
+args <- commandArgs(trailingOnly = TRUE)
+options(scipen = 9999999)
+
+# establish project directory
+sampleDir <- params$sampleDir
+# sampleDir <- "/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/do_oocyte"
+
+```
+
+## Overview
+
+The following markdown provides a basic rundown of quality control of samples (project directory: `r print(sampleDir)`)
+
+### Load Data
+
+```{r load data}
+
+# QC output 1:
+load("QC_1.RData")
+
+# cross object
+load("preQC_cross.RData")
+
+# x chromosome intensities
+xint_file <- "chrXint.csv"
+xint <- qtl2::fread_csv_numer(xint_file, transpose = TRUE)
+
+# y chromosome intensities
+yint_file <- "chrYint.csv"
+yint <- qtl2::fread_csv_numer(yint_file, transpose=TRUE)
+```
+
+## Project Metrics
+
+There are `r qtl2::n_ind(cross)` samples in the experiment, comprising `r nrow(cross$covar[which(cross$covar$sex == "F"),])` females and `r nrow(cross$covar[which(cross$covar$sex == "M"),])` males. There were a total of `r sum(qtl2::n_mar(cross))` informative markers.
+
+## Sample Metrics
+
+### Missing genotypes
+
+```{r missing genotypes}
+# label values with mouse ids
+labels <- paste0(names(percent_missing), " (", round(percent_missing), "%)")
+
+# count number of samples at different missingness thresholds
+missing_thresh <- unlist(lapply(c(1,5,10,20), function(x) length(percent_missing[percent_missing > x])))
+
+# plot
+qtlcharts::iplot(x = seq_along(percent_missing),
+                 y = percent_missing, 
+                 indID=labels,
+                 chartOpts=list(xlab="Mouse", 
+                                ylab="Percent missing genotype data",
+                                ylim=c(0, 100))) %>% suppressMessages()
+```
+
+There were:
+
+- `r missing_thresh[1]` samples missing genotypes for more than 1% of markers,
+- `r missing_thresh[2]` samples missing more than 5%, 
+- `r missing_thresh[3]` samples missing more than 10%, and
+- `r missing_thresh[4]` samples missing more than 20%.
+
+### Sample duplicates
+
+Below is a list of sample pairs flagged as sample duplicates (if there were any). A histogram of the proportion of matching genotypes between all sample pairs is also provided.
+
+```{r sample duplicates}
+# default qtl2 report for sample duplicates
+summary(cg)
+
+# histogram
+hist(cg[upper.tri(cg)], breaks=seq(0, 1, length=201),
+     main="", yaxt="n", ylab="", xlab="Proportion matching genotypes")
+rug(cg[upper.tri(cg)])
+```
+
+### Sex Checks
+
+```{r sex checks}
+# take average X chromosome probe intensity for non-null markers
+xint[is.na(xint)] <- mean(xint[!is.na(xint)])
+xint_ave <- rowMeans(xint[complete.cases(xint),])
+
+# take average Y chromosome probe intensity for non-null markers
+yint[is.na(yint)] <- mean(yint[!is.na(yint)])
+yint_ave <- rowMeans(yint[complete.cases(yint),])
+ave_int <- data.frame(cbind(xint_ave, yint_ave)) %>%
+  dplyr::mutate(sample = rownames(.))
+ave_int <- cbind(ave_int,cross$covar)
+
+# make cutoffs df
+categories_df <- data.frame(c(0.25,0.5,0.25,0.5),
+                            c(0.5,0.5,0.1,0.1),
+                            c("M","XXY","XO","F"))
+colnames(categories_df) <- c("X","Y","sex")
+
+# sex palette
+pal <- c("green","brown","pink","purple")
+names(pal) <- categories_df$sex
+
+# categorize samples
+ave_int <- ave_int %>%
+  dplyr::mutate(predicted_sex = dplyr::case_when(xint_ave > 0.45 & yint_ave < 0.15 ~ "F",
+                                             xint_ave < 0.45 & yint_ave < 0.15 ~ "XO",
+                                             xint_ave > 0.45 & yint_ave > 0.15 ~ "XXY",
+                                             xint_ave < 0.45 & yint_ave > 0.15 ~ "M"),
+                sample = rownames(.))
+ave_int <- cbind(ave_int, percent_missing)
+sex_check_plot <- ggplot() +
+  geom_jitter(ave_int, mapping = aes(x = xint_ave, y = yint_ave, 
+                                     fill = predicted_sex, 
+                                     label = sample,
+                                     label2 = percent_missing), 
+              size = 3, shape = 21) +
+  scale_fill_manual(values = pal) + 
+  geom_hline(yintercept = 0.15) + 
+  geom_vline(xintercept = 0.45) +
+  labs(x = "Mean Chr X Probe Intensity",
+       y = "Mean Chr Y Probe Intensity")%>%
+  suppressWarnings()
+
+# interactive sex check plot
+plotly::ggplotly(sex_check_plot, tooltip = c("sample","percent_missing"))
+
+
+pHet <- rowSums(cross$geno$X == 2)/rowSums(cross$geno$X != 0)
+pHet <- cbind(ave_int, pHet)
+pHet_plot <- ggplot() +
+  geom_jitter(pHet, mapping = aes(x = xint_ave, y = pHet, 
+                                  fill = predicted_sex, 
+                                  label = sample,
+                                  label2 = percent_missing), 
+              size = 2, shape = 21) +
+  scale_fill_manual(values = pal) +
+  geom_hline(yintercept = 0.15) + 
+  geom_vline(xintercept = 0.45) +
+  labs(x = "Mean Chr X Probe Intensity",
+       y = "Proportion Heterozygous Chr X Genotypes") %>%
+  suppressWarnings()
+
+# interactive pHet plot
+plotly::ggplotly(pHet_plot, tooltip = c("sample","percent_missing"))
+```

@@ -1,6 +1,7 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
+
 // Nextflow pipeline for sample QC and haplotype reconstruction
 // on genetically diverse mice
 
@@ -11,7 +12,8 @@ nextflow.enable.dsl=2
 include {GS_TO_QTL2} from "${projectDir}/modules/qtl2/geneseek2qtl2"
 include {WRITE_CROSS} from "${projectDir}/modules/qtl2/write_cross"
 include {SAMPLE_MARKER_QC} from "${projectDir}/modules/qtl2/sample_marker_QC"
-include {GENOPROBS_QC} from "${projectDir}/modules/qtl2/genoprobs_qc.nf"
+include {GENOPROBS_QC} from "${projectDir}/modules/qtl2/genoprobs_qc"
+include {QC_REPORT} from "${projectDir}/modules/markdown/render_QC_markdown"
 
 // hold for including a help page if help if needed
 // if (params.help){
@@ -55,6 +57,12 @@ workflow QC_HAP {
     // Initial haplotype reconstruction for genotyping errors and crossover estimation
     GENOPROBS_QC(WRITE_CROSS.out.cross)
 
-    GENOPROBS_QC.out.genoprob_qc.combine(GS_TO_QTL2.out.qtl2ints).view()
+    report_data = GENOPROBS_QC.out.genoprob_qc
+    			.combine(GS_TO_QTL2.out.qtl2ints)
+    			.combine(SAMPLE_MARKER_QC.out.qc_data)
+    //report_data.view()
+    
+
+    QC_REPORT(report_data)
 
 }

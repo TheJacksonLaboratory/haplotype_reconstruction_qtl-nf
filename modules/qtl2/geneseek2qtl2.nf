@@ -5,7 +5,7 @@ process GS_TO_QTL2 {
   time {5.hour * task.attempt}
   errorStrategy 'retry' 
   maxRetries 3
-
+  
   container 'docker://sjwidmay/lcgbs_hr:qtl2_et_al'
 
   publishDir "${params.sample_folder}/qtl2genos", pattern: "*.csv", mode:'copy'
