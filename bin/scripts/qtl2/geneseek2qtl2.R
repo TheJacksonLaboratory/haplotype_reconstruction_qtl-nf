@@ -21,12 +21,12 @@ library(fst)
 #
 # Sam Widmayer
 # samuel.widmayer@jax.org
-# 20230706
+# 20240102
 ################################################################################ 
 args <- commandArgs(trailingOnly = TRUE)
 
 # test dir
-# test_dir <- "/fastscratch/QC_HAP_outputDir/work/f3/aa7dd51d95747edb722c8e54434471"
+test_dir <- "/fastscratch/QC_HAP_outputDir/work/4a/a579758956a5926bcb90d4a2908619"
 
 # file containing allele codes for GigaMUGA data
 #   - from GM_processed_files.zip, https://doi.org/10.6084/m9.figshare.5404759
@@ -43,7 +43,7 @@ ifiles <- args[2]
 
 # metadata
 metadata <- args[3]
-# metadata <- "/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/do_oocyte/covar_files/DO_covar_nf.csv"
+# metadata <- "/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/DO_ESC/covar_files/DO_ESC_covar.csv"
 meta <- read.csv(metadata)
 
 # read genotype codes
@@ -102,6 +102,10 @@ for(ifile in ifiles) {
     if(0 %in% unique(name_check$matches)){
       cat(paste0(" NOTE: Some samples in supplied metadata not present in", ifile,"\n"))
       cat(paste0(" Filtering", ifile," to matching samples\n"))
+      
+      sample_matches <- name_check[which(name_check$matches != 0),1]
+      
+      
       g %<>%
         dplyr::filter(`SNP Name` %in% codes$marker,
                       `Sample ID` %in% name_check$sample)

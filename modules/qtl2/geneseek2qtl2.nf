@@ -1,8 +1,8 @@
 process GS_TO_QTL2 {
 
   cpus 1
-  memory {100.GB * task.attempt}
-  time {5.hour * task.attempt}
+  memory {50.GB * task.attempt}
+  time {1.hour * task.attempt}
   errorStrategy 'retry' 
   maxRetries 3
   

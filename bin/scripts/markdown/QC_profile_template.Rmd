@@ -29,33 +29,31 @@ summaryPlotTheme <- theme_bw(base_size = 14) +
 args <- commandArgs(trailingOnly = TRUE)
 options(scipen = 9999999)
 
-# establish project directory
-sampleDir <- params$sampleDir
-# sampleDir <- "/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/do_oocyte"
-
 ```
 
-## Overview
-
-The following markdown provides a basic rundown of quality control of samples (project directory: `r print(sampleDir)`)
-
-### Load Data
+## Load Data
 
 ```{r load data}
 
 # QC output 1:
 load("QC_1.RData")
+# load("/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/do_oocyte/geno_probs/QC_1.RData")
 
 # cross object
 load("preQC_cross.RData")
+# load("/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/do_oocyte/geno_probs/preQC_cross.RData")
 
 # x chromosome intensities
 xint_file <- "chrXint.csv"
+# xint_file <- "/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/do_oocyte/qtl2genos/chrXint.csv"
 xint <- qtl2::fread_csv_numer(xint_file, transpose = TRUE)
+# xint <- qtl2::read_csv_numer(xint_file, transpose = TRUE)
 
 # y chromosome intensities
 yint_file <- "chrYint.csv"
+# yint_file <- "/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/do_oocyte/qtl2genos/chrYint.csv"
 yint <- qtl2::fread_csv_numer(yint_file, transpose=TRUE)
+# yint <- qtl2::read_csv_numer(yint_file, transpose = TRUE)
 ```
 
 ## Project Metrics
@@ -80,6 +78,9 @@ qtlcharts::iplot(x = seq_along(percent_missing),
                  chartOpts=list(xlab="Mouse", 
                                 ylab="Percent missing genotype data",
                                 ylim=c(0, 100))) %>% suppressMessages()
+
+n <- names(sort(percent_missing, decreasing=TRUE))
+iboxplot(log10(t(int[,n])+1), orderByMedian=FALSE, chartOpts=list(ylab="log10(SNP intensity + 1)"))
 ```
 
 There were:
@@ -159,10 +160,10 @@ pHet_plot <- ggplot() +
                                   fill = predicted_sex, 
                                   label = sample,
                                   label2 = percent_missing), 
-              size = 2, shape = 21) +
+              size = 3, shape = 21) +
   scale_fill_manual(values = pal) +
-  geom_hline(yintercept = 0.15) + 
-  geom_vline(xintercept = 0.45) +
+  # geom_hline(yintercept = 0.15) + 
+  # geom_vline(xintercept = 0.45) +
   labs(x = "Mean Chr X Probe Intensity",
        y = "Proportion Heterozygous Chr X Genotypes") %>%
   suppressWarnings()
@@ -170,3 +171,61 @@ pHet_plot <- ggplot() +
 # interactive pHet plot
 plotly::ggplotly(pHet_plot, tooltip = c("sample","percent_missing"))
 ```
+
+### Sample Status Update
+
+Parsing the proportion of missing genotypes, predicted and recorded sexes, coat colors, and sample duplication, the following samples have been flagged for follow-up:
+
+```{r sample status update}
+# pull samples with duplicates
+flagged_pairs <- apply(cg, 2, function(x){
+  y <- x[which(x < 1)]
+  z <- y[which(y > 0.9)]
+  return(z)
+})
+sample_dups <- lapply(names(unlist(flagged_pairs)), function(x){
+  strsplit(x, "[.]")[[1]]
+  }) %>% unlist()
+if(exists("FLAG_dup_df")){
+  rm(FLAG_dup_df)
+}
+if(!is.null(sample_dups)){
+ FLAG_dup_df <- data.frame(sample_dups, "sample duplicate") %>%
+  `colnames<-`(c("sample","flag_reason"))
+}
+
+# pull samples with many missing genotypes
+FLAG_pct_miss <- data.frame(percent_missing[percent_missing > 5]) %>%
+  dplyr::mutate(sample = rownames(.)) %>%
+  `colnames<-`(c("notes","sample")) %>%
+  dplyr::mutate(notes = round(notes, 2),
+                notes = paste0(notes,"% of markers missing genotypes"))
+rownames(FLAG_pct_miss) <- NULL
+FLAG_pct_miss$flag_reason <- "missing genotypes"
+
+# pull mismatched assigned and predicted sex
+FLAG_sex_mismatch_df <- ave_int %>%
+  dplyr::filter(sex != predicted_sex) %>%
+  dplyr::mutate(notes = paste0("predicted sex: ",predicted_sex,"; recorded sex: ", sex),
+                flag_reason = "sex mismatch") %>%
+  dplyr::select(sample, notes, flag_reason)
+rownames(FLAG_sex_mismatch_df) <- NULL
+
+# combine all the reports
+flag_report <- lapply(ls(pattern = "FLAG"), function(x) get(x)) %>%
+  Reduce(dplyr::bind_rows,.) %>%
+  dplyr::select(sample, flag_reason, notes) %>%
+  dplyr::arrange(sample)
+rownames(flag_report) <- NULL
+
+# display flagged samples
+DT::datatable(data = flag_report, 
+              class = 'cell-border stripe', 
+              options = list(pageLength = 20), 
+              rownames = FALSE)
+
+# write flagged samples
+write.csv(flag_report, quote = F, row.names = F, file = "sample_QC_result.csv")
+```
+
+

@@ -12,7 +12,7 @@ process QC_REPORT {
   tuple file(cross), file(geno_probs), file(allele_probs), file(viterbi), file(crossovers), file(genotyping_erros), file(x_ints), file(y_ints), file(sample_qc_data)
 
   output:
-  tuple file("QC_markdown.html"), file("QC_markdown.Rmd"), emit: qc_markdown
+  tuple file("QC_markdown.html"), file("QC_markdown.Rmd"), file("sample_QC_result.csv"), emit: qc_markdown
 
   script:
   log.info "----- Rendering Quality Control Report -----"
