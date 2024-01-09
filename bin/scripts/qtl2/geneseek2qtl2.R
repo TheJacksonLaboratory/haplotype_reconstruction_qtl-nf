@@ -26,24 +26,19 @@ library(fst)
 args <- commandArgs(trailingOnly = TRUE)
 
 # test dir
-test_dir <- "/fastscratch/QC_HAP_outputDir/work/4a/a579758956a5926bcb90d4a2908619"
+test_dir <- "/fastscratch/QC_HAP_outputDir/work/7f/659003a192d7f73ed3590964d5fe96"
 
 # file containing allele codes for GigaMUGA data
-#   - from GM_processed_files.zip, https://doi.org/10.6084/m9.figshare.5404759
-# codefile <- "/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/bin/CC_DO_data/GM_allelecodes.csv"
-codefile <- args[1]
+codefile <- "/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/bin/CC_DO_data/GM_allelecodes.csv"
+# codefile <- args[1]
 
 # input files with GigaMUGA genotypes
-#  - can be a single file or a vector of multiple files
-#  - if samples appear in multiple files, the genotypes in later files
-#    will be used in place of genotypes in earlier files
-#  - files can be gzipped (".gz" extension)
-# ifiles <- file.path(test_dir,"finalreportlist.txt")
-ifiles <- args[2]
+ifiles <- file.path(test_dir,"finalreportlist.txt")
+# ifiles <- args[2]
 
 # metadata
-metadata <- args[3]
-# metadata <- "/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/DO_ESC/covar_files/DO_ESC_covar.csv"
+# metadata <- args[3]
+metadata <- "/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/DO_ESC/covar_files/DO_ESC_covar.csv"
 meta <- read.csv(metadata)
 
 # read genotype codes
@@ -51,66 +46,73 @@ codes <- data.table::fread(codefile, skip = 3)
 
 full_geno <- NULL
 cXint <- cYint <- NULL
+duplicate_table <- NULL
+
+# replacement function for qtl2convert::cbind_smother
+# instead of condensing repeated samples:
+# records the name of the duplicate (original sample name + a three digit randomly generated "dup" flag) and appends the repeated genotypes
+combineGenos <- function(big_geno, small_geno){
+  if(any(colnames(small_geno) %in% colnames(full_geno))){
+    rep_samples <- unlist(lapply(colnames(small_geno), function(x){
+      flag <- paste0(runif(3,0,9) %/% 1, collapse = "")
+      paste0(x,"_dup_",flag)
+    }))
+    update_meta <- data.frame(colnames(small_geno), rep_samples)
+    colnames(update_meta) <- c("original","duplicated")
+    colnames(small_geno) <- rep_samples
+  } else {
+    update_meta <- data.frame(NA,NA)
+    colnames(update_meta) <- c("original","duplicated")
+  }
+  new_big_geno <- cbind(big_geno, small_geno)
+  return(list(new_big_geno, update_meta))
+}
+
 
 finalreports <- read.table(ifiles)
-ifiles <- c(as.matrix(t(finalreports)))
-# ifiles <- paste(test_dir,c(as.matrix(t(finalreports))), sep = "/")
+# ifiles <- c(as.matrix(t(finalreports)))
+ifiles <- paste(test_dir,c(as.matrix(t(finalreports))), sep = "/")
 
 for(ifile in ifiles) {
     cat(" -File:", ifile, "\n")
-    # rezip <- FALSE
-    # if(!file.exists(ifile)) {
-    #     cat(" -Unzipping file\n")
-    #     system(paste("gunzip", ifile))
-    #     rezip <- TRUE
-    # }
-
     cat(" -Reading data\n")
     
-    # benchmarking reading performance
-    # microbenchmark::microbenchmark(unit = "milliseconds",
-    #   g <- data.table::fread(paste0('unzip -p ',ifile),
-    #                          skip = 9, 
-    #                          nrows = 100),
-    #   g <- vroom::vroom(file = ifile, skip = 9,
-    #                     n_max = 100,
-    #                     num_threads = parallel::detectCores()/2)
-    # )
-    # g <- data.table::fread(paste0('unzip -p ',ifile),
-    #                        skip = 9, 
-    #                        nrows = 100)
+    # read in the FinalReport compressed file
     g <- vroom::vroom(file = ifile, skip = 9,
                       # n_max = 100000,
-                      num_threads = parallel::detectCores()/2)
+                      num_threads = parallel::detectCores()/2, progress = F)
     
-    
+    # pull the sample names from the qtl2 covar file
     meta_sample_names <- unique(meta$id)
+    
+    # pull the sample names from the FinalReport file
     sample_names <- unique(g$`Sample ID`)
     
-    name_check <- Reduce(rbind, 
-           lapply(meta_sample_names, 
-                  function(x) data.frame(x, length(grep(x = sample_names, 
-                                                        pattern = x)))))
-    colnames(name_check) <- c("sample","matches")
+    # match the two sources
+    matches <- sample_names[which(sample_names %in% meta_sample_names)]
+  
+    
+    # # find the samples from covariate file in the FinalReport file
+    # name_check <- Reduce(rbind, 
+    #        lapply(meta_sample_names, 
+    #               function(x) data.frame(x, length(grep(x = sample_names, 
+    #                                                     pattern = x)))))
+    # colnames(name_check) <- c("sample","matches")
     
     # test if *some* samples from metadata are in the finalreport file
-    
-    if(!1 %in% unique(name_check$matches)){
+    if(length(matches) == 0){
       next
     }
     
-    if(0 %in% unique(name_check$matches)){
+    if(length(matches) < length(meta_sample_names)){
       cat(paste0(" NOTE: Some samples in supplied metadata not present in", ifile,"\n"))
       cat(paste0(" Filtering", ifile," to matching samples\n"))
-      
-      sample_matches <- name_check[which(name_check$matches != 0),1]
-      
-      
+      cat(paste0("Matching samples:\n"))
+      print(matches)
       g %<>%
         dplyr::filter(`SNP Name` %in% codes$marker,
-                      `Sample ID` %in% name_check$sample)
-      cat(paste0("Matching samples:\n"))
-      print(unique(g$`Sample ID`))
+                      `Sample ID` %in% matches)
+
     } else {
       cat(paste0(" NOTE: All samples in supplied metadata present in", ifile,"\n"))
       g %<>%
@@ -139,10 +141,22 @@ for(ifile in ifiles) {
     if(is.null(full_geno)) {
         full_geno <- geno
     } else {
-        # if any columns in both, use those from second set
-        full_geno <- qtl2convert::cbind_smother(full_geno, geno)
+        # if there are any samples in both genotype matrices, amend the name and
+        # update covar file
+        combineGeno_out <- combineGenos(full_geno, geno)
+        full_geno <- combineGeno_out[[1]]
+        if(is.null(duplicate_table)){
+          duplicate_table <- combineGeno_out[[2]]
+        } else {
+          duplicate_table <- rbind(duplicate_table,combineGeno_out[[2]])
+          g <- dplyr::left_join(g, duplicate_table %>%
+                                  dplyr::rename(`Sample ID` = original)) %>%
+            dplyr::select(-c(`Sample ID`)) %>%
+            dplyr::mutate(`Sample ID` = duplicated) %>%
+            dplyr::select(`SNP Name`,`Sample ID`, everything())
+        }
     }
-
+    
     # grab X and Y intensities
     cat(" -Grab X and Y intensities\n")
     # gX <- g[g[,"SNP Name"] %in% codes[codes$chr=="X","marker"],]
@@ -179,11 +193,10 @@ for(ifile in ifiles) {
         cYint <- qtl2convert::cbind_smother(cYint, cY)
     }
 
-    # if(rezip) {
-    #     cat(" -Rezipping file\n")
-    #     system(paste("gzip", ifile))
-    # }
 }
+
+
+
 
 # write X and Y intensities
 cat(" -Writing X and Y intensities\n")
