@@ -15,6 +15,7 @@ process SAMPLE_MARKER_QC {
 
   output:
   path("QC_1.RData"), emit: qc_data
+  path("working_cross.RData"), emit: genoprobs_cross
 
   script:
   log.info "----- Performing Initial Sample and Marker Quality Control -----"

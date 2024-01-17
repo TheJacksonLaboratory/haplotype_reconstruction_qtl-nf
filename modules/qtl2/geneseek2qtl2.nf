@@ -15,7 +15,7 @@ process GS_TO_QTL2 {
   path(FinalReport)
 
   output:
-  path("*geno*.csv"), emit: qtl2genos
+  tuple file("*geno*.csv"), file("covar.csv"), emit: qtl2genos
   path("*int.csv"), emit: qtl2ints
   path("*.fst"), emit: qtl2intsfst
 

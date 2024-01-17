@@ -9,7 +9,7 @@ process QC_REPORT {
   publishDir "${params.sample_folder}/report", pattern: "*", mode:'copy'
 
   input:
-  tuple file(cross), file(geno_probs), file(allele_probs), file(viterbi), file(crossovers), file(genotyping_erros), file(x_ints), file(y_ints), file(sample_qc_data)
+  tuple file(cross), file(geno_probs), file(allele_probs), file(viterbi), file(crossovers), file(genotyping_erros), file(original_cross), file(x_ints), file(y_ints), file(sample_qc_data)
 
   output:
   tuple file("QC_markdown.html"), file("QC_markdown.Rmd"), file("sample_QC_result.csv"), emit: qc_markdown
