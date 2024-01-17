@@ -19,7 +19,6 @@ process WRITE_CROSS {
 
   """
   Rscript --vanilla ${projectDir}/bin/scripts/qtl2/writeControlFile.R \
-	${projectDir}/${params.covar} \
 	${params.CCDOdataDir} \
 	${projectDir}/${params.sample_folder}/qtl2genos
 	

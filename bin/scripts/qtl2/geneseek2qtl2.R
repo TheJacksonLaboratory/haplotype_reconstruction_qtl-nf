@@ -26,27 +26,23 @@ library(fst)
 args <- commandArgs(trailingOnly = TRUE)
 
 # test dir
-test_dir <- "/fastscratch/QC_HAP_outputDir/work/7f/659003a192d7f73ed3590964d5fe96"
+# test_dir <- "/fastscratch/QC_HAP_outputDir/work/8b/61d065d83b4d93a5c58eb3579e56a5"
 
 # file containing allele codes for GigaMUGA data
-codefile <- "/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/bin/CC_DO_data/GM_allelecodes.csv"
-# codefile <- args[1]
+# codefile <- "/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/bin/CC_DO_data/GM_allelecodes.csv"
+codefile <- args[1]
 
 # input files with GigaMUGA genotypes
-ifiles <- file.path(test_dir,"finalreportlist.txt")
-# ifiles <- args[2]
+# ifiles <- file.path(test_dir,"finalreportlist.txt")
+ifiles <- args[2]
 
 # metadata
-# metadata <- args[3]
-metadata <- "/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/DO_ESC/covar_files/DO_ESC_covar.csv"
+metadata <- args[3]
+# metadata <- "/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/DO_ESC/covar_files/DO_ESC_covar.csv"
 meta <- read.csv(metadata)
 
 # read genotype codes
 codes <- data.table::fread(codefile, skip = 3)
-
-full_geno <- NULL
-cXint <- cYint <- NULL
-duplicate_table <- NULL
 
 # replacement function for qtl2convert::cbind_smother
 # instead of condensing repeated samples:
@@ -68,11 +64,26 @@ combineGenos <- function(big_geno, small_geno){
   return(list(new_big_geno, update_meta))
 }
 
-
+# read in the FinalReport file table from nextflow
 finalreports <- read.table(ifiles)
-# ifiles <- c(as.matrix(t(finalreports)))
-ifiles <- paste(test_dir,c(as.matrix(t(finalreports))), sep = "/")
 
+# create vector of FinalReports from the table
+ifiles <- c(as.matrix(t(finalreports)))
+# ifiles <- paste(test_dir,c(as.matrix(t(finalreports))), sep = "/")
+
+# initialize full genotype matrix
+full_geno <- NULL
+
+# initialize sex chromosome intensity matrices
+cXint <- cYint <- NULL
+
+# initialize table of duplicated samples across FinalReports
+duplicate_table <- NULL
+
+# all marker intensities
+allints <- NULL
+
+# pull out genotypes and sex chromosome intensities from FinalReports
 for(ifile in ifiles) {
     cat(" -File:", ifile, "\n")
     cat(" -Reading data\n")
@@ -87,46 +98,36 @@ for(ifile in ifiles) {
     
     # pull the sample names from the FinalReport file
     sample_names <- unique(g$`Sample ID`)
-    
+    # print(sample_names)
     # match the two sources
     matches <- sample_names[which(sample_names %in% meta_sample_names)]
-  
-    
-    # # find the samples from covariate file in the FinalReport file
-    # name_check <- Reduce(rbind, 
-    #        lapply(meta_sample_names, 
-    #               function(x) data.frame(x, length(grep(x = sample_names, 
-    #                                                     pattern = x)))))
-    # colnames(name_check) <- c("sample","matches")
-    
-    # test if *some* samples from metadata are in the finalreport file
+    print(matches)
+
+
+    # are *any* samples from metadata are in the finalreport file?
     if(length(matches) == 0){
       next
     }
-    
+
+    # are *all* samples from metadata in this finalreport file?
     if(length(matches) < length(meta_sample_names)){
       cat(paste0(" NOTE: Some samples in supplied metadata not present in", ifile,"\n"))
       cat(paste0(" Filtering", ifile," to matching samples\n"))
-      cat(paste0("Matching samples:\n"))
-      print(matches)
-      g %<>%
-        dplyr::filter(`SNP Name` %in% codes$marker,
-                      `Sample ID` %in% matches)
+      g <- g[which(g$`Sample ID` %in% matches),]
+      g <- g[which(g$`SNP Name` %in% codes$marker),]
 
+    # all samples from metadata in the finalreport file
     } else {
       cat(paste0(" NOTE: All samples in supplied metadata present in", ifile,"\n"))
-      g %<>%
-        dplyr::filter(`SNP Name` %in% codes$marker)
+      g <- g[which(g$`SNP Name` %in% codes$marker),]
     }
-    
-    # NOTE: may need to revise the IDs in the 2nd column
-    samples <- unique(g$`Sample ID`)
 
-    # matrix to contain the genotypes
+    # create a matrix to contain the genotypes
+    samples <- unique(g$`Sample ID`)
     geno <- matrix(nrow=nrow(codes), ncol=length(samples))
     dimnames(geno) <- list(codes$marker, samples)
 
-    # fill in matrix
+    # fill in the matrix
     cat(" -Reorganizing data\n")
     for(i in seq(along=samples)) {
         if(i==round(i,-1)) cat(" --Sample", i, "of", length(samples), "\n")
@@ -135,68 +136,91 @@ for(ifile in ifiles) {
                                             g[wh,]$`Allele2 - Forward`)
     }
 
+    # Encode sample genotypes using the allele codes
     cat(" -Encode genotypes\n")
     geno <- qtl2convert::encode_geno(geno, as.matrix(codes[,c("A","B")]))
 
+    # is this the first/only finalreport file?
     if(is.null(full_geno)) {
         full_geno <- geno
+
+    # if not, need to combine genotypes from multiple finalreport files
     } else {
-        # if there are any samples in both genotype matrices, amend the name and
-        # update covar file
-        combineGeno_out <- combineGenos(full_geno, geno)
-        full_geno <- combineGeno_out[[1]]
+      # if there are any samples in both genotype matrices, amend the name
+      combineGeno_out <- combineGenos(full_geno, geno)
+      full_geno <- combineGeno_out[[1]]
+      dup_table <- combineGeno_out[[2]]
+
+      # were there any duplicates?
+      if(nrow(dup_table[complete.cases(dup_table),]) != 0){
         if(is.null(duplicate_table)){
-          duplicate_table <- combineGeno_out[[2]]
+          # write duplicates to empty object
+          duplicate_table <- dup_table
+          
         } else {
-          duplicate_table <- rbind(duplicate_table,combineGeno_out[[2]])
-          g <- dplyr::left_join(g, duplicate_table %>%
-                                  dplyr::rename(`Sample ID` = original)) %>%
-            dplyr::select(-c(`Sample ID`)) %>%
-            dplyr::mutate(`Sample ID` = duplicated) %>%
-            dplyr::select(`SNP Name`,`Sample ID`, everything())
+          # append the duplicates to existing duplicates
+          duplicate_table <- rbind(duplicate_table,dup_table)
         }
+        
+        # replace the names in the genotype file
+        g <- g %>%
+          dplyr::rename(original = `Sample ID`) %>%
+          dplyr::left_join(., dup_table) %>%
+          dplyr::rename(`Sample ID` = duplicated) %>%
+          dplyr::select(`SNP Name`,`Sample ID`, everything(), -original)
+        samples <- unique(g$`Sample ID`)
+      }
     }
     
     # grab X and Y intensities
     cat(" -Grab X and Y intensities\n")
-    # gX <- g[g[,"SNP Name"] %in% codes[codes$chr=="X","marker"],]
-    gX <- g %>%
-        dplyr::filter(`SNP Name` %in% codes[which(codes$chr == "X"),]$marker)
-    # gY <- g[g[,"SNP Name"] %in% codes[codes$chr=="Y","marker"],]
-    gY <- g %>%
-        dplyr::filter(`SNP Name` %in% codes[which(codes$chr == "Y"),]$marker)
+    gX <- g[which(g$`SNP Name` %in% codes[codes$chr=="X"]$marker),]
+    gY <- g[which(g$`SNP Name` %in% codes[codes$chr=="Y"]$marker),]
 
-    #### SAFE STOPPING POINT
     cX <- matrix(nrow=sum(codes$chr=="X"),
                  ncol=length(samples))
     dimnames(cX) <- list(codes[which(codes$chr == "X"),]$marker, samples)
+
     cY <- matrix(nrow=sum(codes$chr=="Y"),
                  ncol=length(samples))
     dimnames(cY) <- list(codes[which(codes$chr == "Y"),]$marker, samples)
 
     for(i in seq(along=samples)) {
-        if(i==round(i,-1)) cat(" --Sample", i, "of", length(samples), "\n")
-        wh <- (gX[,"Sample ID"]==samples[i])
-        cX[gX[wh,]$`SNP Name`,i] <- (gX$X[wh] + gX$Y[wh])/2
-        # cX[gX[wh,"SNP Name"],i] <- (gX$X[wh] + gX$Y[wh])/2
+      if(i==round(i,-1)) cat(" --Sample", i, "of", length(samples), "\n")
+      wh <- (gX[,"Sample ID"]==samples[i])
+      cX[gX[wh,]$`SNP Name`,i] <- (gX$X[wh] + gX$Y[wh])/2
 
-        wh <- (gY[,"Sample ID"]==samples[i])
-        cY[gY[wh,]$`SNP Name`,i] <- (gY$X[wh] + gY$Y[wh])/2
-        # cY[gY[wh,"SNP Name"],i] <- (gY$X[wh] + gY$Y[wh])/2
+      wh <- (gY[,"Sample ID"]==samples[i])
+      cY[gY[wh,]$`SNP Name`,i] <- (gY$X[wh] + gY$Y[wh])/2
+      # cY[gY[wh,"SNP Name"],i] <- (gY$X[wh] + gY$Y[wh])/2
     }
+
     if(is.null(cXint)) {
-        cXint <- cX
-        cYint <- cY
+      cXint <- cX
+      cYint <- cY
     } else {
-        # if any columns in both, use those from second set
-        cXint <- qtl2convert::cbind_smother(cXint, cX)
-        cYint <- qtl2convert::cbind_smother(cYint, cY)
+      # if any columns in both, use those from second set
+      cXint <- cbind(cXint, cX)
+      cYint <- cbind(cYint, cY)
     }
-
+    
+    # pull the intensities and new sample names and write to intensity object
+    int <- g %>%
+      dplyr::select(`SNP Name`,`Sample ID`,X,Y) %>%
+      dplyr::rename(snp = `SNP Name`,
+                    sample = `Sample ID`) %>%
+      tidyr::pivot_longer(-c(snp,sample),names_to = "channel") %>%
+      tidyr::pivot_wider(names_from = sample, values_from = value) %>%
+      data.frame()
+    
+    if(is.null(allints)){
+      allints <- int
+    } else {
+      allints <- dplyr::left_join(allints, int)
+    }
+    
+    
 }
-
-
-
 
 # write X and Y intensities
 cat(" -Writing X and Y intensities\n")
@@ -223,45 +247,23 @@ for(chrom in c(1:19,"X","Y","M")) {
                            overwrite=TRUE)
 }
 
-# Write all intensities
-# unzip and read the data
-dat <- vector("list", length(ifiles))
-for(i in seq_along(ifiles)) {
-  # zipfile <- tempfile()
-  # download.file(ifiles[i], zipfile)
-  unzipped <- unzip(ifiles[i])
-  dat[[i]] <- vroom::vroom(file = unzipped, skip = 9,
-               num_threads = parallel::detectCores())
-  # unlink(zipfile)
-}
-
-# rbind the results together, saving selected columns
-dat <- do.call("rbind", dat)[,c("SNP Name", "Sample ID", "X", "Y")]
-
-# create matrices that are snps x samples
-snps <- unique(dat[,"SNP Name"])
-samples <- unique(dat[,"Sample ID"])
-X <- Y <- matrix(ncol=length(samples$`Sample ID`), nrow=length(snps$`SNP Name`))
-dimnames(X) <- dimnames(Y) <- list(snps$`SNP Name`, samples$`Sample ID`)
-for(i in seq(along=samples$`Sample ID`)) {
-  message(i, " of ", length(samples$`Sample ID`))
-  tmp <- dat[dat[,"Sample ID"]==samples$`Sample ID`[i],]
-  X[,samples$`Sample ID`[i]] <- tmp[,"X"]$X
-  Y[,samples$`Sample ID`[i]] <- tmp[,"Y"]$Y
-}
-
-# bring together in one matrix
-result <- cbind(snp=rep(snps$`SNP Name`, 2),
-                channel=rep(c("X", "Y"), each=length(snps$`SNP Name`)),
-                as.data.frame(rbind(X, Y)))
-rownames(result) <- 1:nrow(result)
-
-# bring SNP rows together
-result <- result[as.numeric(t(cbind(seq_along(snps$`SNP Name`), seq_along(snps$`SNP Name`)+length(snps$`SNP Name`)))),]
-rownames(result) <- 1:nrow(result)
-
 # write to fst file, maximally compressed
-write_fst(result, "intensities.fst", compress=100)
+write_fst(allints, "intensities.fst", compress=100)
+
+# write new metadata file
+if(!is.null(duplicate_table)){
+  duplicate_covar <- duplicate_table %>%
+    dplyr::rename(id = original) %>%
+    dplyr::left_join(., meta) %>%
+    dplyr::select(-id) %>%
+    dplyr::rename(id = duplicated) %>%
+    dplyr::bind_rows(meta,.)
+  write.csv(duplicate_covar, file = "covar.csv", quote = F, row.names = F)
+} else {
+  write.csv(meta, file = "covar.csv", quote = F, row.names = F)
+}
+
+
 
 
 

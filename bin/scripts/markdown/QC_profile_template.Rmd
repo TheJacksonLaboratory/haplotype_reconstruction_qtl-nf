@@ -8,8 +8,6 @@ output:
     toc_depth: 3
     code_folding: hide
 date: "`r format(Sys.time(), '%m-%d-%Y')`"
-params:
-  sampleDir: "null"
 ---
 
 ```{r setup, include=FALSE}
@@ -37,28 +35,56 @@ options(scipen = 9999999)
 
 # QC output 1:
 load("QC_1.RData")
-# load("/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/do_oocyte/geno_probs/QC_1.RData")
+# load("/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/DO_ESC/geno_probs/QC_1.RData")
 
 # cross object
 load("preQC_cross.RData")
-# load("/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/do_oocyte/geno_probs/preQC_cross.RData")
+# load("/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/DO_ESC/geno_probs/preQC_cross.RData")
 
 # x chromosome intensities
 xint_file <- "chrXint.csv"
-# xint_file <- "/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/do_oocyte/qtl2genos/chrXint.csv"
+# xint_file <- "/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/DO_ESC/qtl2genos/chrXint.csv"
 xint <- qtl2::fread_csv_numer(xint_file, transpose = TRUE)
 # xint <- qtl2::read_csv_numer(xint_file, transpose = TRUE)
 
 # y chromosome intensities
 yint_file <- "chrYint.csv"
-# yint_file <- "/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/do_oocyte/qtl2genos/chrYint.csv"
+# yint_file <- "/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/DO_ESC/qtl2genos/chrYint.csv"
 yint <- qtl2::fread_csv_numer(yint_file, transpose=TRUE)
 # yint <- qtl2::read_csv_numer(yint_file, transpose = TRUE)
+
+# crossover counts
+# load("nxos.RData")
+load("/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/DO_ESC/geno_probs/nxos.RData")
 ```
 
 ## Project Metrics
 
-There are `r qtl2::n_ind(cross)` samples in the experiment, comprising `r nrow(cross$covar[which(cross$covar$sex == "F"),])` females and `r nrow(cross$covar[which(cross$covar$sex == "M"),])` males. There were a total of `r sum(qtl2::n_mar(cross))` informative markers.
+There were `r qtl2::n_ind(cross)` samples in the original experiment, comprising `r nrow(cross$covar[which(cross$covar$sex == "F"),])` females and `r nrow(cross$covar[which(cross$covar$sex == "M"),])` males. There were a total of `r sum(qtl2::n_mar(cross))` informative markers.
+
+## Marker Metrics
+
+### Missing Genotypes
+
+```{r}
+hist(percent_missing_marker, breaks = 100, 
+     main = "Distribution of the proportion of samples missing each marker", 
+     xlab = "Percent of samples missing genotype",
+     ylab = "Number of genotypes")
+
+remaining_markers_10pct <- length(which(percent_missing_marker > 10))/sum(n_mar(cross))
+remaining_markers_5pct <- length(which(percent_missing_marker > 5))/sum(n_mar(cross))
+```
+
+Of all markers, `r paste0(round(remaining_markers_10pct*100),"%")` of markers were missing in 10% of samples and `r paste0(round(remaining_markers_5pct*100),"%")` in 5% of samples. We removed markers according to the latter threshold.
+
+```{r showing marker depletion}
+# cross with bad markers removed
+cat("Original cross: \n")
+qtl2::n_mar(cross)
+cat("\nMarkers cleaned: \n")
+qtl2::n_mar(working_cross)
+```
 
 ## Sample Metrics
 
@@ -66,20 +92,21 @@ There are `r qtl2::n_ind(cross)` samples in the experiment, comprising `r nrow(c
 
 ```{r missing genotypes}
 # label values with mouse ids
-labels <- paste0(names(percent_missing), " (", round(percent_missing), "%)")
+percent_missing_ind_cross <- qtl2::n_missing(working_cross, "ind", "prop")*100
+labels <- paste0(names(percent_missing_ind_cross), " (", round(percent_missing_ind_cross), "%)")
 
 # count number of samples at different missingness thresholds
-missing_thresh <- unlist(lapply(c(1,5,10,20), function(x) length(percent_missing[percent_missing > x])))
+missing_thresh <- unlist(lapply(c(1,5,10,20), function(x) length(percent_missing_ind_cross[percent_missing_ind_cross > x])))
 
 # plot
-qtlcharts::iplot(x = seq_along(percent_missing),
-                 y = percent_missing, 
+qtlcharts::iplot(x = seq_along(percent_missing_ind_cross),
+                 y = percent_missing_ind_cross, 
                  indID=labels,
                  chartOpts=list(xlab="Mouse", 
                                 ylab="Percent missing genotype data",
                                 ylim=c(0, 100))) %>% suppressMessages()
 
-n <- names(sort(percent_missing, decreasing=TRUE))
+n <- names(sort(percent_missing_ind_cross, decreasing=TRUE))
 iboxplot(log10(t(int[,n])+1), orderByMedian=FALSE, chartOpts=list(ylab="log10(SNP intensity + 1)"))
 ```
 
@@ -107,13 +134,41 @@ rug(cg[upper.tri(cg)])
 ### Sex Checks
 
 ```{r sex checks}
+
 # take average X chromosome probe intensity for non-null markers
-xint[is.na(xint)] <- mean(xint[!is.na(xint)])
-xint_ave <- rowMeans(xint[complete.cases(xint),])
+# are any or all of the Y chromosome markers bad?
+if(all(colnames(xint) %in% names(which(percent_missing_marker > 5)))){
+  # just use what we have
+  xint[is.na(xint)] <- mean(xint[!is.na(xint)])
+  xint_ave <- rowMeans(xint[complete.cases(xint),])
+} else if(any(colnames(xint) %in% names(which(percent_missing_marker > 5)))){
+  # remove the bad markers
+  xint <- xint[,-which(colnames(xint) %in% names(which(percent_missing_marker > 5)))]
+  xint[is.na(xint)] <- mean(xint[!is.na(xint)])
+  xint_ave <- rowMeans(xint[complete.cases(xint),])
+} else {
+  xint[is.na(xint)] <- mean(xint[!is.na(xint)])
+  xint_ave <- rowMeans(xint[complete.cases(xint),])
+}
+
 
 # take average Y chromosome probe intensity for non-null markers
-yint[is.na(yint)] <- mean(yint[!is.na(yint)])
-yint_ave <- rowMeans(yint[complete.cases(yint),])
+# are any or all of the Y chromosome markers bad?
+if(all(colnames(yint) %in% names(which(percent_missing_marker > 5)))){
+  # just use what we have
+  yint[is.na(yint)] <- mean(yint[!is.na(yint)])
+  yint_ave <- rowMeans(yint[complete.cases(yint),])
+} else if(any(colnames(yint) %in% names(which(percent_missing_marker > 5)))){
+  # remove the bad markers
+  yint <- yint[,-which(colnames(yint) %in% names(which(percent_missing_marker > 5)))]
+  yint[is.na(yint)] <- mean(yint[!is.na(yint)])
+  yint_ave <- rowMeans(yint[complete.cases(yint),])
+} else {
+  yint[is.na(yint)] <- mean(yint[!is.na(yint)])
+  yint_ave <- rowMeans(yint[complete.cases(yint),])
+}
+
+# put the Chr X and Y intensities together
 ave_int <- data.frame(cbind(xint_ave, yint_ave)) %>%
   dplyr::mutate(sample = rownames(.))
 ave_int <- cbind(ave_int,cross$covar)
@@ -135,7 +190,10 @@ ave_int <- ave_int %>%
                                              xint_ave > 0.45 & yint_ave > 0.15 ~ "XXY",
                                              xint_ave < 0.45 & yint_ave > 0.15 ~ "M"),
                 sample = rownames(.))
-ave_int <- cbind(ave_int, percent_missing)
+
+ave_int <- cbind(ave_int, percent_missing_ind_cross) %>%
+  dplyr::mutate(percent_missing = paste0(round(percent_missing_ind_cross,2),"%"))
+
 sex_check_plot <- ggplot() +
   geom_jitter(ave_int, mapping = aes(x = xint_ave, y = yint_ave, 
                                      fill = predicted_sex, 
@@ -153,7 +211,7 @@ sex_check_plot <- ggplot() +
 plotly::ggplotly(sex_check_plot, tooltip = c("sample","percent_missing"))
 
 
-pHet <- rowSums(cross$geno$X == 2)/rowSums(cross$geno$X != 0)
+pHet <- rowSums(working_cross$geno$X == 2)/rowSums(working_cross$geno$X != 0)
 pHet <- cbind(ave_int, pHet)
 pHet_plot <- ggplot() +
   geom_jitter(pHet, mapping = aes(x = xint_ave, y = pHet, 
@@ -193,9 +251,11 @@ if(!is.null(sample_dups)){
  FLAG_dup_df <- data.frame(sample_dups, "sample duplicate") %>%
   `colnames<-`(c("sample","flag_reason"))
 }
+FLAG_dup_df <- FLAG_dup_df[!duplicated(FLAG_dup_df),]
+
 
 # pull samples with many missing genotypes
-FLAG_pct_miss <- data.frame(percent_missing[percent_missing > 5]) %>%
+FLAG_pct_miss <- data.frame(percent_missing_ind_cross[percent_missing_ind_cross > 5]) %>%
   dplyr::mutate(sample = rownames(.)) %>%
   `colnames<-`(c("notes","sample")) %>%
   dplyr::mutate(notes = round(notes, 2),
@@ -215,11 +275,19 @@ rownames(FLAG_sex_mismatch_df) <- NULL
 flag_report <- lapply(ls(pattern = "FLAG"), function(x) get(x)) %>%
   Reduce(dplyr::bind_rows,.) %>%
   dplyr::select(sample, flag_reason, notes) %>%
-  dplyr::arrange(sample)
+  dplyr::arrange(sample) %>%
+  dplyr::mutate(notes = dplyr::if_else(flag_reason == "sample duplicate",
+                                       true = "T", false = notes))
 rownames(flag_report) <- NULL
 
+# tidy the sample flag report?
+wide_flag_report <- flag_report %>%
+  tidyr::pivot_wider(names_from = flag_reason, 
+                     values_from = notes)
+
+
 # display flagged samples
-DT::datatable(data = flag_report, 
+DT::datatable(data = wide_flag_report, 
               class = 'cell-border stripe', 
               options = list(pageLength = 20), 
               rownames = FALSE)
@@ -228,4 +296,46 @@ DT::datatable(data = flag_report,
 write.csv(flag_report, quote = F, row.names = F, file = "sample_QC_result.csv")
 ```
 
+### Crossover Counts
+```{r analyzing crossovers}
+xo_counts <- data.frame(rowSums(nxo)) %>%
+  dplyr::rename(nxos = `rowSums.nxo.`) %>%
+  dplyr::mutate(sample = rownames(.)) %>%
+  dplyr::bind_cols(., working_cross$covar) %>%
+  dplyr::mutate(flagged = if_else(sample %in% flag_report$sample, T, F))
 
+normal_count_plot <- ggplot(xo_counts) + 
+  theme_bw() + 
+  geom_jitter(mapping = aes(x = gen,
+                            y = nxos,
+                            label = sample,
+                            fill = flagged), width = 0.2, shape = 21, size = 2) +
+  facet_grid(.~sex) + 
+  scale_fill_manual(values = c("green","orange")) + 
+  theme(panel.grid.minor = element_blank()) + 
+  labs(x = "Generation",
+       y = "Number of crossovers")
+  
+
+if(working_cross$crosstype == "do"){
+  xo_counts$expected_xos <- unlist(lapply(as.numeric(xo_counts$gen), function(x){
+    expected = 300 + 24 * (x - 7)
+    return(expected)
+  }))
+  
+  oe_xo_count_plot <- ggplot(xo_counts) + 
+    theme_bw() + 
+    geom_jitter(mapping = aes(x = gen,
+                              y = nxos-expected_xos,
+                              label = sample,
+                              fill = flagged), width = 0.2, shape = 21, size = 2) +
+    facet_grid(.~sex) + 
+    scale_fill_manual(values = c("green","orange")) + 
+    theme(panel.grid.minor = element_blank()) + 
+    labs(x = "Generation",
+         y = "Observed crossovers - Expected crossovers")
+}
+
+lapply(ls(pattern = "count_plot"), function(x) plotly::ggplotly(get(x), tooltip = "sample"))
+
+```

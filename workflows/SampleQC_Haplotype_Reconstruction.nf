@@ -50,19 +50,20 @@ workflow QC_HAP {
 
     // Perform initial sample QC
     sample_QC_files = WRITE_CROSS.out.cross
-					.combine(GS_TO_QTL2.out.qtl2intsfst)
+    					.combine(GS_TO_QTL2.out.qtl2intsfst)
 
     SAMPLE_MARKER_QC(sample_QC_files)
 
     // Initial haplotype reconstruction for genotyping errors and crossover estimation
-    GENOPROBS_QC(WRITE_CROSS.out.cross)
+    GENOPROBS_QC(SAMPLE_MARKER_QC.out.genoprobs_cross)
 
+
+    // Render the QC report
     report_data = GENOPROBS_QC.out.genoprob_qc
+			.combine(WRITE_CROSS.out.cross)
     			.combine(GS_TO_QTL2.out.qtl2ints)
     			.combine(SAMPLE_MARKER_QC.out.qc_data)
     //report_data.view()
-    
-
     QC_REPORT(report_data)
 
 }
