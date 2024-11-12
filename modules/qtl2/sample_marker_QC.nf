@@ -6,7 +6,7 @@ process SAMPLE_MARKER_QC {
   errorStrategy 'retry' 
   maxRetries 3
 
-  container 'docker://sjwidmay/lcgbs_hr:qtl2_et_al'
+  container 'docker://sjwidmay/lcgbs_hr:latest'
 
   publishDir "${params.sample_folder}/geno_probs", pattern: "*.RData", mode:'copy'
 

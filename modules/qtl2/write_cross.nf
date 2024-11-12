@@ -4,7 +4,7 @@ process WRITE_CROSS {
   memory 100.GB
   time '02:00:00'
 
-  container 'docker://sjwidmay/lcgbs_hr:qtl2_et_al'
+  container 'docker://sjwidmay/lcgbs_hr:latest'
 
   publishDir "${params.sample_folder}/geno_probs", pattern: "*.RData", mode:'copy'
 
@@ -19,7 +19,6 @@ process WRITE_CROSS {
 
   """
   Rscript --vanilla ${projectDir}/bin/scripts/qtl2/writeControlFile.R \
-	${params.CCDOdataDir} \
 	${projectDir}/${params.sample_folder}/qtl2genos
 	
   """

@@ -1,12 +1,12 @@
 process GENOPROBS_QC {
 
   cpus 1
-  memory {200.GB * task.attempt}
+  memory {300.GB * task.attempt}
   time {12.hour * task.attempt}
   errorStrategy 'retry' 
-  maxRetries 3
+  maxRetries 2
 
-  container 'docker://sjwidmay/lcgbs_hr:qtl2_et_al'
+  container 'docker://sjwidmay/lcgbs_hr:latest'
 
   publishDir "${params.sample_folder}/geno_probs", pattern: "*.RData", mode:'copy'
 

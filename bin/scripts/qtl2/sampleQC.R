@@ -7,7 +7,7 @@ library(fst)
 #
 # Sam Widmayer
 # samuel.widmayer@jax.org
-# 20240112
+# 20240117
 ################################################################################ 
 # test_dir <- "/fastscratch/QC_HAP_outputDir/work/b8/fdfd8ce7bdd497445041b0ac27a8b7"
 # setwd(test_dir)
@@ -21,26 +21,6 @@ load(cross)
 # import intensities
 intensities <- args[2]
 # intensities <- "/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/DO_ESC/qtl2genos/intensities.fst"
-
-
-# Reordering genotypes so that most common allele in founders is first
-for(chr in seq_along(cross$founder_geno)) {
-  fg <- cross$founder_geno[[chr]]
-  g <- cross$geno[[chr]]
-  f1 <- colSums(fg==1)/colSums(fg != 0)
-  
-  fg[fg==0] <- NA
-  g[g==0] <- NA
-  
-  fg[,f1 < 0.5] <- 4 - fg[,f1 < 0.5]
-  g[,f1 < 0.5]  <- 4 - g[,f1 < 0.5]
-  
-  fg[is.na(fg)] <- 0
-  g[is.na(g)] <- 0
-  
-  cross$founder_geno[[chr]] <- fg
-  cross$geno[[chr]] <- g
-}
 
 # percent missing markers
 percent_missing_marker <- qtl2::n_missing(cross, "marker", "prop")*100

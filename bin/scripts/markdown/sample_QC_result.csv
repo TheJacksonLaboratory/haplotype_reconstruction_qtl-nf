@@ -1,0 +1,349 @@
+sample,flag_reason,notes
+D0_001,crossover counts,95 crossovers; flagged as too low or high
+D0_002,crossover counts,102 crossovers; flagged as too low or high
+D0_003,crossover counts,99 crossovers; flagged as too low or high
+D0_004,sex mismatch,predicted sex: F; recorded sex: M
+D0_004,crossover counts,90 crossovers; flagged as too low or high
+D0_005,sex mismatch,predicted sex: M; recorded sex: F
+D0_005,crossover counts,106 crossovers; flagged as too low or high
+D0_006,crossover counts,100 crossovers; flagged as too low or high
+D0_007,crossover counts,81 crossovers; flagged as too low or high
+D0_008,sex mismatch,predicted sex: F; recorded sex: M
+D0_008,crossover counts,72 crossovers; flagged as too low or high
+D0_009,crossover counts,82 crossovers; flagged as too low or high
+D0_010,crossover counts,114 crossovers; flagged as too low or high
+D0_011,sex mismatch,predicted sex: XO; recorded sex: F
+D0_011,crossover counts,103 crossovers; flagged as too low or high
+D0_012,sex mismatch,predicted sex: M; recorded sex: F
+D0_012,crossover counts,110 crossovers; flagged as too low or high
+D0_013,sex mismatch,predicted sex: F; recorded sex: M
+D0_013,crossover counts,102 crossovers; flagged as too low or high
+D0_014,sex mismatch,predicted sex: F; recorded sex: M
+D0_014,crossover counts,104 crossovers; flagged as too low or high
+D0_015,crossover counts,120 crossovers; flagged as too low or high
+D0_016,crossover counts,115 crossovers; flagged as too low or high
+D0_017,crossover counts,182 crossovers; flagged as too low or high
+D0_018,sex mismatch,predicted sex: M; recorded sex: F
+D0_018,crossover counts,87 crossovers; flagged as too low or high
+D0_019,sex mismatch,predicted sex: M; recorded sex: F
+D0_019,crossover counts,124 crossovers; flagged as too low or high
+D0_020,sex mismatch,predicted sex: M; recorded sex: F
+D0_020,crossover counts,120 crossovers; flagged as too low or high
+D0_021,sex mismatch,predicted sex: F; recorded sex: M
+D0_021,crossover counts,100 crossovers; flagged as too low or high
+D0_022,crossover counts,99 crossovers; flagged as too low or high
+D0_023,sex mismatch,predicted sex: F; recorded sex: M
+D0_023,crossover counts,94 crossovers; flagged as too low or high
+D0_024,sex mismatch,predicted sex: F; recorded sex: M
+D0_024,crossover counts,122 crossovers; flagged as too low or high
+D0_025,sex mismatch,predicted sex: F; recorded sex: M
+D0_025,crossover counts,94 crossovers; flagged as too low or high
+D0_026,crossover counts,98 crossovers; flagged as too low or high
+D0_027,sex mismatch,predicted sex: F; recorded sex: M
+D0_027,crossover counts,72 crossovers; flagged as too low or high
+D0_028,sex mismatch,predicted sex: F; recorded sex: M
+D0_028,crossover counts,96 crossovers; flagged as too low or high
+D0_029,sex mismatch,predicted sex: F; recorded sex: M
+D0_029,crossover counts,94 crossovers; flagged as too low or high
+D0_030,sex mismatch,predicted sex: XO; recorded sex: M
+D0_030,crossover counts,116 crossovers; flagged as too low or high
+D0_031,sex mismatch,predicted sex: M; recorded sex: F
+D0_031,crossover counts,99 crossovers; flagged as too low or high
+D0_033,sex mismatch,predicted sex: M; recorded sex: F
+D0_033,crossover counts,86 crossovers; flagged as too low or high
+D0_034,sex mismatch,predicted sex: F; recorded sex: M
+D0_034,crossover counts,98 crossovers; flagged as too low or high
+D0_035,sex mismatch,predicted sex: M; recorded sex: F
+D0_035,crossover counts,125 crossovers; flagged as too low or high
+D0_036,sex mismatch,predicted sex: M; recorded sex: F
+D0_036,crossover counts,94 crossovers; flagged as too low or high
+D0_037,sex mismatch,predicted sex: M; recorded sex: F
+D0_037,crossover counts,79 crossovers; flagged as too low or high
+D0_038,sex mismatch,predicted sex: M; recorded sex: F
+D0_038,crossover counts,67 crossovers; flagged as too low or high
+D0_039,crossover counts,95 crossovers; flagged as too low or high
+D0_040,sex mismatch,predicted sex: M; recorded sex: F
+D0_040,crossover counts,88 crossovers; flagged as too low or high
+D0_041,sex mismatch,predicted sex: M; recorded sex: F
+D0_041,crossover counts,109 crossovers; flagged as too low or high
+D0_042,sex mismatch,predicted sex: F; recorded sex: M
+D0_042,crossover counts,108 crossovers; flagged as too low or high
+D0_043,sex mismatch,predicted sex: M; recorded sex: F
+D0_043,crossover counts,107 crossovers; flagged as too low or high
+D0_044,sex mismatch,predicted sex: M; recorded sex: F
+D0_044,crossover counts,116 crossovers; flagged as too low or high
+D0_045,sex mismatch,predicted sex: F; recorded sex: M
+D0_045,crossover counts,100 crossovers; flagged as too low or high
+D0_046,crossover counts,73 crossovers; flagged as too low or high
+D0_047,sex mismatch,predicted sex: F; recorded sex: M
+D0_047,crossover counts,96 crossovers; flagged as too low or high
+D0_048,crossover counts,88 crossovers; flagged as too low or high
+D0_049,crossover counts,129 crossovers; flagged as too low or high
+D0_051,crossover counts,101 crossovers; flagged as too low or high
+D0_053,crossover counts,114 crossovers; flagged as too low or high
+D0_054,sex mismatch,predicted sex: F; recorded sex: M
+D0_054,crossover counts,98 crossovers; flagged as too low or high
+D0_055,crossover counts,112 crossovers; flagged as too low or high
+D0_056,crossover counts,108 crossovers; flagged as too low or high
+D0_057,crossover counts,111 crossovers; flagged as too low or high
+D0_058,sex mismatch,predicted sex: F; recorded sex: M
+D0_058,crossover counts,114 crossovers; flagged as too low or high
+D0_059,crossover counts,91 crossovers; flagged as too low or high
+D0_060,crossover counts,96 crossovers; flagged as too low or high
+D0_061,crossover counts,100 crossovers; flagged as too low or high
+D0_062,crossover counts,125 crossovers; flagged as too low or high
+D0_063,sex mismatch,predicted sex: F; recorded sex: M
+D0_063,crossover counts,90 crossovers; flagged as too low or high
+D0_064,crossover counts,92 crossovers; flagged as too low or high
+D0_065,sex mismatch,predicted sex: F; recorded sex: M
+D0_065,crossover counts,108 crossovers; flagged as too low or high
+D0_066,sex mismatch,predicted sex: M; recorded sex: F
+D0_066,crossover counts,113 crossovers; flagged as too low or high
+D0_067,sex mismatch,predicted sex: M; recorded sex: F
+D0_067,crossover counts,106 crossovers; flagged as too low or high
+D0_068,sex mismatch,predicted sex: M; recorded sex: F
+D0_068,crossover counts,102 crossovers; flagged as too low or high
+D0_069,sex mismatch,predicted sex: F; recorded sex: M
+D0_069,crossover counts,102 crossovers; flagged as too low or high
+D0_070,crossover counts,89 crossovers; flagged as too low or high
+D0_071,sex mismatch,predicted sex: F; recorded sex: M
+D0_071,crossover counts,148 crossovers; flagged as too low or high
+D0_072,sex mismatch,predicted sex: M; recorded sex: F
+D0_072,crossover counts,118 crossovers; flagged as too low or high
+D0_074,sex mismatch,predicted sex: M; recorded sex: F
+D0_074,crossover counts,123 crossovers; flagged as too low or high
+D0_075,sex mismatch,predicted sex: F; recorded sex: M
+D0_075,crossover counts,106 crossovers; flagged as too low or high
+D0_077,sex mismatch,predicted sex: F; recorded sex: M
+D0_077,crossover counts,96 crossovers; flagged as too low or high
+D0_078,sex mismatch,predicted sex: M; recorded sex: F
+D0_078,crossover counts,126 crossovers; flagged as too low or high
+D0_079,crossover counts,126 crossovers; flagged as too low or high
+D0_080,crossover counts,107 crossovers; flagged as too low or high
+D0_081,crossover counts,186 crossovers; flagged as too low or high
+D0_082,crossover counts,92 crossovers; flagged as too low or high
+D0_083,crossover counts,103 crossovers; flagged as too low or high
+D0_084,sex mismatch,predicted sex: M; recorded sex: F
+D0_084,crossover counts,128 crossovers; flagged as too low or high
+D0_085,sex mismatch,predicted sex: F; recorded sex: M
+D0_085,crossover counts,124 crossovers; flagged as too low or high
+D0_086,sex mismatch,predicted sex: M; recorded sex: F
+D0_086,crossover counts,95 crossovers; flagged as too low or high
+D0_087,crossover counts,98 crossovers; flagged as too low or high
+D0_088,sex mismatch,predicted sex: M; recorded sex: F
+D0_088,crossover counts,122 crossovers; flagged as too low or high
+D0_089,crossover counts,96 crossovers; flagged as too low or high
+D0_091,sex mismatch,predicted sex: M; recorded sex: F
+D0_091,crossover counts,124 crossovers; flagged as too low or high
+D0_092,sex mismatch,predicted sex: F; recorded sex: M
+D0_092,crossover counts,108 crossovers; flagged as too low or high
+D0_093,sex mismatch,predicted sex: F; recorded sex: M
+D0_093,crossover counts,94 crossovers; flagged as too low or high
+D0_094,sex mismatch,predicted sex: XO; recorded sex: M
+D0_094,crossover counts,119 crossovers; flagged as too low or high
+D0_095,crossover counts,116 crossovers; flagged as too low or high
+D0_097,sex mismatch,predicted sex: M; recorded sex: F
+D0_097,crossover counts,101 crossovers; flagged as too low or high
+D0_099,sex mismatch,predicted sex: M; recorded sex: F
+D0_099,crossover counts,97 crossovers; flagged as too low or high
+D0_100,crossover counts,80 crossovers; flagged as too low or high
+D0_101,sex mismatch,predicted sex: M; recorded sex: F
+D0_101,crossover counts,134 crossovers; flagged as too low or high
+D0_102,sex mismatch,predicted sex: F; recorded sex: M
+D0_102,crossover counts,106 crossovers; flagged as too low or high
+D0_103,sex mismatch,predicted sex: F; recorded sex: M
+D0_103,crossover counts,100 crossovers; flagged as too low or high
+D0_104,sex mismatch,predicted sex: F; recorded sex: M
+D0_104,crossover counts,130 crossovers; flagged as too low or high
+D0_105,sex mismatch,predicted sex: M; recorded sex: F
+D0_105,crossover counts,122 crossovers; flagged as too low or high
+D0_110,crossover counts,106 crossovers; flagged as too low or high
+D0_111,sex mismatch,predicted sex: F; recorded sex: M
+D0_111,crossover counts,114 crossovers; flagged as too low or high
+D0_112,sex mismatch,predicted sex: F; recorded sex: M
+D0_112,crossover counts,84 crossovers; flagged as too low or high
+D0_113,sex mismatch,predicted sex: F; recorded sex: M
+D0_113,crossover counts,100 crossovers; flagged as too low or high
+D0_114,crossover counts,84 crossovers; flagged as too low or high
+D0_115,crossover counts,90 crossovers; flagged as too low or high
+D0_116,sex mismatch,predicted sex: M; recorded sex: F
+D0_116,crossover counts,97 crossovers; flagged as too low or high
+D0_117,missing genotypes,8.17% of markers missing genotypes
+D0_117,sex mismatch,predicted sex: M; recorded sex: F
+D0_117,crossover counts,68 crossovers; flagged as too low or high
+D0_118,sex mismatch,predicted sex: F; recorded sex: M
+D0_118,crossover counts,116 crossovers; flagged as too low or high
+D0_119,sex mismatch,predicted sex: F; recorded sex: M
+D0_119,crossover counts,82 crossovers; flagged as too low or high
+D0_120,sex mismatch,predicted sex: M; recorded sex: F
+D0_120,crossover counts,110 crossovers; flagged as too low or high
+D0_121,sex mismatch,predicted sex: M; recorded sex: F
+D0_121,crossover counts,112 crossovers; flagged as too low or high
+D0_122,crossover counts,112 crossovers; flagged as too low or high
+D0_123,sample duplicate,T
+D0_123,missing genotypes,16.88% of markers missing genotypes
+D0_123,sex mismatch,predicted sex: XXY; recorded sex: F
+D0_123,crossover counts,18528 crossovers; flagged as too low or high
+D0_124,missing genotypes,33.12% of markers missing genotypes
+D0_124,crossover counts,492 crossovers; flagged as too low or high
+D0_125,crossover counts,112 crossovers; flagged as too low or high
+D0_126,missing genotypes,63.72% of markers missing genotypes
+D0_126,sex mismatch,predicted sex: XO; recorded sex: F
+D0_126,crossover counts,404 crossovers; flagged as too low or high
+D0_127,sex mismatch,predicted sex: M; recorded sex: F
+D0_127,crossover counts,109 crossovers; flagged as too low or high
+D0_128,missing genotypes,47.32% of markers missing genotypes
+D0_128,sex mismatch,predicted sex: XO; recorded sex: F
+D0_128,crossover counts,4672 crossovers; flagged as too low or high
+D0_129,missing genotypes,64.82% of markers missing genotypes
+D0_129,sex mismatch,predicted sex: XO; recorded sex: M
+D0_129,crossover counts,2214 crossovers; flagged as too low or high
+D0_130,missing genotypes,65.29% of markers missing genotypes
+D0_130,sex mismatch,predicted sex: M; recorded sex: F
+D0_130,crossover counts,4684 crossovers; flagged as too low or high
+D0_131,crossover counts,110 crossovers; flagged as too low or high
+D0_132,missing genotypes,71.28% of markers missing genotypes
+D0_132,sex mismatch,predicted sex: XO; recorded sex: M
+D0_132,crossover counts,2530 crossovers; flagged as too low or high
+D0_133,missing genotypes,44.27% of markers missing genotypes
+D0_133,sex mismatch,predicted sex: XO; recorded sex: F
+D0_134,crossover counts,80 crossovers; flagged as too low or high
+D0_135,missing genotypes,71.85% of markers missing genotypes
+D0_136,crossover counts,104 crossovers; flagged as too low or high
+D0_137,crossover counts,104 crossovers; flagged as too low or high
+D0_138,sample duplicate,T
+D0_138,missing genotypes,18.83% of markers missing genotypes
+D0_138,sex mismatch,predicted sex: XXY; recorded sex: F
+D0_138,crossover counts,15499 crossovers; flagged as too low or high
+D0_139,missing genotypes,47.25% of markers missing genotypes
+D0_139,crossover counts,180 crossovers; flagged as too low or high
+D0_140,missing genotypes,6.8% of markers missing genotypes
+D0_140,crossover counts,98 crossovers; flagged as too low or high
+D0_141,sex mismatch,predicted sex: M; recorded sex: F
+D0_141,crossover counts,90 crossovers; flagged as too low or high
+D0_142,sex mismatch,predicted sex: F; recorded sex: M
+D0_142,crossover counts,118 crossovers; flagged as too low or high
+D0_143,missing genotypes,57.42% of markers missing genotypes
+D0_143,sex mismatch,predicted sex: XO; recorded sex: F
+D0_144,sample duplicate,T
+D0_144,missing genotypes,38.99% of markers missing genotypes
+D0_144,crossover counts,11004 crossovers; flagged as too low or high
+D0_146,crossover counts,100 crossovers; flagged as too low or high
+D0_147,sex mismatch,predicted sex: F; recorded sex: M
+D0_147,crossover counts,88 crossovers; flagged as too low or high
+D0_148,sex mismatch,predicted sex: F; recorded sex: M
+D0_148,crossover counts,100 crossovers; flagged as too low or high
+D0_149,sex mismatch,predicted sex: M; recorded sex: F
+D0_149,crossover counts,114 crossovers; flagged as too low or high
+D0_150,crossover counts,120 crossovers; flagged as too low or high
+D0_151,crossover counts,100 crossovers; flagged as too low or high
+D0_152,crossover counts,139 crossovers; flagged as too low or high
+D0_155,sex mismatch,predicted sex: F; recorded sex: M
+D0_155,crossover counts,120 crossovers; flagged as too low or high
+D0_156,sex mismatch,predicted sex: M; recorded sex: F
+D0_156,crossover counts,121 crossovers; flagged as too low or high
+D0_157,crossover counts,92 crossovers; flagged as too low or high
+D0_158,sex mismatch,predicted sex: XO; recorded sex: M
+D0_158,crossover counts,100 crossovers; flagged as too low or high
+D0_159,crossover counts,103 crossovers; flagged as too low or high
+D0_160,sex mismatch,predicted sex: F; recorded sex: M
+D0_160,crossover counts,162 crossovers; flagged as too low or high
+D0_162,sex mismatch,predicted sex: M; recorded sex: F
+D0_162,crossover counts,105 crossovers; flagged as too low or high
+D0_163,sex mismatch,predicted sex: F; recorded sex: M
+D0_163,crossover counts,116 crossovers; flagged as too low or high
+D0_164,sex mismatch,predicted sex: M; recorded sex: F
+D0_164,crossover counts,83 crossovers; flagged as too low or high
+D0_165,crossover counts,126 crossovers; flagged as too low or high
+D0_167,crossover counts,168 crossovers; flagged as too low or high
+D0_168,crossover counts,114 crossovers; flagged as too low or high
+D0_170,crossover counts,135 crossovers; flagged as too low or high
+D0_172,crossover counts,118 crossovers; flagged as too low or high
+D0_173,crossover counts,118 crossovers; flagged as too low or high
+D0_174,crossover counts,90 crossovers; flagged as too low or high
+D0_175,crossover counts,126 crossovers; flagged as too low or high
+D0_176,sex mismatch,predicted sex: F; recorded sex: M
+D0_176,crossover counts,88 crossovers; flagged as too low or high
+D0_177,crossover counts,122 crossovers; flagged as too low or high
+D0_178,crossover counts,96 crossovers; flagged as too low or high
+D0_179,crossover counts,110 crossovers; flagged as too low or high
+D0_181,sex mismatch,predicted sex: M; recorded sex: F
+D0_181,crossover counts,103 crossovers; flagged as too low or high
+D0_182,sex mismatch,predicted sex: M; recorded sex: F
+D0_182,crossover counts,111 crossovers; flagged as too low or high
+D0_183,crossover counts,107 crossovers; flagged as too low or high
+D0_184,crossover counts,86 crossovers; flagged as too low or high
+D0_185,crossover counts,104 crossovers; flagged as too low or high
+D0_186,sex mismatch,predicted sex: M; recorded sex: F
+D0_186,crossover counts,108 crossovers; flagged as too low or high
+D0_187,sex mismatch,predicted sex: M; recorded sex: F
+D0_187,crossover counts,133 crossovers; flagged as too low or high
+D0_188,crossover counts,104 crossovers; flagged as too low or high
+D0_189,sex mismatch,predicted sex: F; recorded sex: M
+D0_189,crossover counts,108 crossovers; flagged as too low or high
+D0_190,sex mismatch,predicted sex: F; recorded sex: M
+D0_190,crossover counts,122 crossovers; flagged as too low or high
+D0_191,sex mismatch,predicted sex: F; recorded sex: M
+D0_191,crossover counts,124 crossovers; flagged as too low or high
+D0_193,crossover counts,133 crossovers; flagged as too low or high
+D0_194,sex mismatch,predicted sex: F; recorded sex: M
+D0_194,crossover counts,106 crossovers; flagged as too low or high
+D0_195,crossover counts,110 crossovers; flagged as too low or high
+D0_196,sex mismatch,predicted sex: F; recorded sex: M
+D0_196,crossover counts,118 crossovers; flagged as too low or high
+D0_198,sex mismatch,predicted sex: F; recorded sex: M
+D0_198,crossover counts,130 crossovers; flagged as too low or high
+D0_200,sex mismatch,predicted sex: F; recorded sex: M
+D0_200,crossover counts,92 crossovers; flagged as too low or high
+D0_201,crossover counts,122 crossovers; flagged as too low or high
+D0_202,sex mismatch,predicted sex: M; recorded sex: F
+D0_202,crossover counts,97 crossovers; flagged as too low or high
+D0_203,sex mismatch,predicted sex: XO; recorded sex: M
+D0_203,crossover counts,127 crossovers; flagged as too low or high
+D0_204,sex mismatch,predicted sex: M; recorded sex: F
+D0_204,crossover counts,115 crossovers; flagged as too low or high
+D0_207,sex mismatch,predicted sex: M; recorded sex: F
+D0_207,crossover counts,135 crossovers; flagged as too low or high
+D0_208,crossover counts,118 crossovers; flagged as too low or high
+D0_209,sex mismatch,predicted sex: M; recorded sex: F
+D0_209,crossover counts,102 crossovers; flagged as too low or high
+D0_210,sex mismatch,predicted sex: M; recorded sex: F
+D0_210,crossover counts,107 crossovers; flagged as too low or high
+D0_211,sex mismatch,predicted sex: M; recorded sex: F
+D0_211,crossover counts,106 crossovers; flagged as too low or high
+D0_212,crossover counts,115 crossovers; flagged as too low or high
+D0_213,sex mismatch,predicted sex: F; recorded sex: M
+D0_213,crossover counts,112 crossovers; flagged as too low or high
+D0_214,sex mismatch,predicted sex: M; recorded sex: F
+D0_214,crossover counts,136 crossovers; flagged as too low or high
+D0_215,crossover counts,116 crossovers; flagged as too low or high
+D0_216,sex mismatch,predicted sex: F; recorded sex: M
+D0_216,crossover counts,108 crossovers; flagged as too low or high
+D0_217,sex mismatch,predicted sex: M; recorded sex: F
+D0_217,crossover counts,112 crossovers; flagged as too low or high
+D0_218,crossover counts,120 crossovers; flagged as too low or high
+DO_ESC_MF1,crossover counts,194 crossovers; flagged as too low or high
+DO_ESC_MF10,sample duplicate,T
+DO_ESC_MF10,missing genotypes,17.98% of markers missing genotypes
+DO_ESC_MF10,sex mismatch,predicted sex: F; recorded sex: M
+DO_ESC_MF10,crossover counts,0 crossovers; flagged as too low or high
+DO_ESC_MF10_dup_676,crossover counts,86 crossovers; flagged as too low or high
+DO_ESC_MF13,sex mismatch,predicted sex: M; recorded sex: F
+DO_ESC_MF13,crossover counts,89 crossovers; flagged as too low or high
+DO_ESC_MF2,missing genotypes,8.31% of markers missing genotypes
+DO_ESC_MF2,sex mismatch,predicted sex: M; recorded sex: F
+DO_ESC_MF2,crossover counts,70 crossovers; flagged as too low or high
+DO_ESC_MF3,sex mismatch,predicted sex: F; recorded sex: M
+DO_ESC_MF3,crossover counts,90 crossovers; flagged as too low or high
+DO_ESC_MF5,crossover counts,88 crossovers; flagged as too low or high
+DO_ESC_MF7,missing genotypes,18.8% of markers missing genotypes
+DO_ESC_MF7,sex mismatch,predicted sex: XXY; recorded sex: M
+DO_ESC_MF7,crossover counts,0 crossovers; flagged as too low or high
+DO_ESC_MF7_dup_727,crossover counts,97 crossovers; flagged as too low or high
+DO_ESC_MF8,sex mismatch,predicted sex: F; recorded sex: M
+DO_ESC_MF8,crossover counts,106 crossovers; flagged as too low or high
+DO_ESC_MF9,sample duplicate,T
+DO_ESC_MF9,missing genotypes,14.46% of markers missing genotypes
+DO_ESC_MF9,crossover counts,16 crossovers; flagged as too low or high
+DO_ESC_MF9_dup_707,sample duplicate,T
+DO_ESC_MF9_dup_707,crossover counts,94 crossovers; flagged as too low or high

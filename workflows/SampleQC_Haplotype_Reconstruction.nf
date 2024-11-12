@@ -42,9 +42,11 @@ workflow QC_HAP {
 
     // Write control file
     cross_elements = GS_TO_QTL2.out.qtl2genos
-					.mix(GM_foundergenos,GM_gmaps,GM_pmaps)
-					.flatten()
-					.collect()
+    					.mix(GM_foundergenos,GM_gmaps,GM_pmaps)
+    					.flatten()
+    					.collect()
+
+    cross_elements.view()
     WRITE_CROSS(cross_elements)
 
 
@@ -60,7 +62,7 @@ workflow QC_HAP {
 
     // Render the QC report
     report_data = GENOPROBS_QC.out.genoprob_qc
-			.combine(WRITE_CROSS.out.cross)
+    			.combine(WRITE_CROSS.out.cross)
     			.combine(GS_TO_QTL2.out.qtl2ints)
     			.combine(SAMPLE_MARKER_QC.out.qc_data)
     //report_data.view()

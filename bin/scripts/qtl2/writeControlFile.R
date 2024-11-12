@@ -7,25 +7,20 @@ library(qtl2convert)
 #
 # Sam Widmayer
 # samuel.widmayer@jax.org
-# 20231208
+# 20240118
 ################################################################################ 
-# test_dir <- "/fastscratch/QC_HAP_outputDir/work/a0/e955a22cdc680497e2645072f6c83c"
+# test_dir <- "/flashscratch/widmas/QC_HAP_outputDir/work/23/ae39b333f6b459ebb9a9fe6dee6672"
 # setwd(test_dir)
 args <- commandArgs(trailingOnly = TRUE)
-
 
 # covar file
 cat(" -Input files:\n")
 covar_file <- "covar.csv"
+# covar_file <- file.path(test_dir,"covar.csv")
 print(covar_file)
 
-# founder data
-founder_ostem <- args[1]
-# founder_ostem <- "/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/bin/CC_DO_data"
-print(founder_ostem)
-
 # make the control file in the output directory?
-sample_geno_ostem <- args[2]
+sample_geno_ostem <- args[1]
 # sample_geno_ostem <- '/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/do_oocyte/qtl2genos'
 print(sample_geno_ostem)
 
@@ -40,14 +35,13 @@ head(covar)
 # move elements to one directory for reference and for proper cross paths
 system(paste0("mv GM*.csv ",sample_geno_ostem))
 system(paste0("mv geno*.csv ",sample_geno_ostem))
+#system(paste0("mv founder_geno*.csv ",sample_geno_ostem))
 system(paste0("mv DO_covar_nf.csv ",sample_geno_ostem))
 
 # Write control file
 chr <- c(1:19, "X")
 cat(" -Writing control file\n")
 # for now stick with "do" cross type, eventually take a crosstype param
-# have to paste getwd() in front of the control file output name so that
-# the files in the channel are recognized properly by read_cross2
 if(length(unique(covar$sex)) > 1){
   qtl2::write_control_file(output_file = file.path(sample_geno_ostem,"QC_HAP.json"),
                            crosstype="do",
@@ -61,11 +55,11 @@ if(length(unique(covar$sex)) > 1){
                            geno_codes=list(A=1, H=2, B=3),
                            xchr="X",
                            covar_file="DO_covar_nf.csv",
-                           crossinfo_covar=colnames(covar)[!colnames(covar) %in% "id"],
+                           crossinfo_covar="gen",
                            sex_covar="sex",
-                           sex_codes=c(F="female", M="male"),
+                           sex_codes=c("F"="female", "M"="male"),
                            overwrite = T)
-} else if(unique(covar$sex) == "female"){
+} else if(unique(covar$sex) == "F"){
   cat(" Note: only females present in cross.")
   qtl2::write_control_file(output_file = file.path(sample_geno_ostem,"QC_HAP.json"),
                            crosstype="do",
@@ -79,9 +73,9 @@ if(length(unique(covar$sex)) > 1){
                            geno_codes=list(A=1, H=2, B=3),
                            xchr="X",
                            covar_file="DO_covar_nf.csv",
-                           crossinfo_covar=colnames(covar)[!colnames(covar) %in% "id"],
+                           crossinfo_covar="gen",
                            sex_covar="sex",
-                           sex_codes=c(F="female"),
+                           sex_codes=c("F"="female"),
                            overwrite = T)
 } else {
   cat(" Note: only males present in cross.")
@@ -97,9 +91,9 @@ if(length(unique(covar$sex)) > 1){
                            geno_codes=list(A=1, H=2, B=3),
                            xchr="X",
                            covar_file="DO_covar_nf.csv",
-                           crossinfo_covar=colnames(covar)[!colnames(covar) %in% "id"],
+                           crossinfo_covar="gen",
                            sex_covar="sex",
-                           sex_codes=c(M="male"),
+                           sex_codes=c("M"="male"),
                            overwrite = T)
 }
 
