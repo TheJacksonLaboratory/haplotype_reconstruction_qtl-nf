@@ -1,12 +1,13 @@
 #!/bin/bash
 #SBATCH --mail-user=samuel.widmayer@jax.org
-#SBATCH --job-name=haplotype_reconstruction-nf
+#SBATCH --job-name=hr-nf
 #SBATCH --mail-type=END,FAIL
 #SBATCH -p compute
 #SBATCH -q batch
 #SBATCH -t 36:00:00
 #SBATCH --mem=10G
 #SBATCH --ntasks=1
+#SBATCH --output=%x.%j.out
 
 cd $SLURM_SUBMIT_DIR
 
@@ -16,11 +17,9 @@ module load nextflow/23.10.1
 
 # RUN PIPELINE
 nextflow main.nf \
-        --workflow SampleQC_Haplotype_Reconstruction  \
-        --sample_folder 'projects/do_oocyte' \
+        --workflow SampleQC_Haplotype_Reconstruction \
+        --manifest 'sample_sheets/test_sheet.csv' \
 	--pubdir '/flashscratch/widmas/QC_HAP_outputDir' \
         -w '/flashscratch/widmas/QC_HAP_outputDir/work' \
-        --crossType 'do' \
-	--covar 'projects/do_oocyte/covar_files/DO_covar_nf.csv' \
         --comment "This script will perform sample QC and haplotype reconstruction on genetically diverse mouse samples" \
 	-resume

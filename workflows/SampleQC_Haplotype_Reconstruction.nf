@@ -6,9 +6,6 @@ nextflow.enable.dsl=2
 // on genetically diverse mice
 
 // import modules
-// include {help} from "${projectDir}/bin/help/wgs.nf"
-// include {param_log} from "${projectDir}/bin/log/stitch.nf"
-
 include {GS_TO_QTL2} from "${projectDir}/modules/qtl2/geneseek2qtl2"
 include {WRITE_CROSS} from "${projectDir}/modules/qtl2/write_cross"
 include {SAMPLE_MARKER_QC} from "${projectDir}/modules/qtl2/sample_marker_QC"
@@ -28,8 +25,9 @@ include {QC_REPORT} from "${projectDir}/modules/markdown/render_QC_markdown"
 // save for starting point
 // check files for errors
 
-chrs = Channel.of(1..19,'X')
-FinalReports = Channel.fromPath("${params.sample_folder}/neogen_finalreports/*FinalReport*").collect()
+
+
+//FinalReports = Channel.fromPath("${params.sample_folder}/neogen_finalreports/*FinalReport*").collect()
 GM_foundergenos = Channel.fromPath("${params.CCDOdataDir}/GM_foundergeno*").collect()
 GM_gmaps = Channel.fromPath("${params.CCDOdataDir}/GM_gmap*").collect()
 GM_pmaps = Channel.fromPath("${params.CCDOdataDir}/GM_pmap*").collect()
@@ -37,35 +35,48 @@ GM_pmaps = Channel.fromPath("${params.CCDOdataDir}/GM_pmap*").collect()
 // QC and Haplotype Reconstruction Workflow
 workflow QC_HAP {
     
+
+    // Create channels
+    project_ch = Channel.fromPath("${params.manifest}")
+                    .splitCsv(header: true)
+                    .map {row -> 
+                            [ finalreport_file = row.finalreport_file.toString(),
+                            project_id = row.project_id.toString(),
+                            covar_file = row.covar_file.toString(),
+                            cross_type = row.cross_type.toString() ]}
+                    .groupTuple(by: 1)
+                    .map {it -> [it[0], it[1], it[2].unique().flatten()[0], it[3].unique().flatten()[0]]}
+    project_ch.view()
+
     // Process FinalReport File
     GS_TO_QTL2(FinalReports)
 
     // Write control file
-    cross_elements = GS_TO_QTL2.out.qtl2genos
-    					.mix(GM_foundergenos,GM_gmaps,GM_pmaps)
-    					.flatten()
-    					.collect()
+    //cross_elements = GS_TO_QTL2.out.qtl2genos
+    //					.mix(GM_foundergenos,GM_gmaps,GM_pmaps)
+    //					.flatten()
+    //					.collect()
 
-    cross_elements.view()
-    WRITE_CROSS(cross_elements)
+    //cross_elements.view()
+    //WRITE_CROSS(cross_elements)
 
 
     // Perform initial sample QC
-    sample_QC_files = WRITE_CROSS.out.cross
-    					.combine(GS_TO_QTL2.out.qtl2intsfst)
+    //sample_QC_files = WRITE_CROSS.out.cross
+    //					.combine(GS_TO_QTL2.out.qtl2intsfst)
 
-    SAMPLE_MARKER_QC(sample_QC_files)
+    //SAMPLE_MARKER_QC(sample_QC_files)
 
     // Initial haplotype reconstruction for genotyping errors and crossover estimation
-    GENOPROBS_QC(SAMPLE_MARKER_QC.out.genoprobs_cross)
+    //GENOPROBS_QC(SAMPLE_MARKER_QC.out.genoprobs_cross)
 
 
     // Render the QC report
-    report_data = GENOPROBS_QC.out.genoprob_qc
-    			.combine(WRITE_CROSS.out.cross)
-    			.combine(GS_TO_QTL2.out.qtl2ints)
-    			.combine(SAMPLE_MARKER_QC.out.qc_data)
+    //report_data = GENOPROBS_QC.out.genoprob_qc
+    //			.combine(WRITE_CROSS.out.cross)
+    //			.combine(GS_TO_QTL2.out.qtl2ints)
+    //			.combine(SAMPLE_MARKER_QC.out.qc_data)
     //report_data.view()
-    QC_REPORT(report_data)
+    //QC_REPORT(report_data)
 
 }
