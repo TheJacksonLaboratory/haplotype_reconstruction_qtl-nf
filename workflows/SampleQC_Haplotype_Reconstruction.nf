@@ -57,14 +57,10 @@ workflow HR_QC {
 
     // Write control file
     WRITE_CROSS(metadata, sampleGenos, consensusFiles)
-    WRITE_CROSS.out.cross.view()
-
 
     // Perform initial sample QC
-    // sample_QC_files = WRITE_CROSS.out.cross
-    //					.combine(GS_TO_QTL2.out.qtl2intsfst)
-
-    //SAMPLE_MARKER_QC(sample_QC_files)
+    sampleQCFiles = WRITE_CROSS.out.cross.join(GS_TO_QTL2.out.qtl2intsfst, by: [1, 1])
+    SAMPLE_MARKER_QC(sampleQCFiles)
 
     // Initial haplotype reconstruction for genotyping errors and crossover estimation
     //GENOPROBS_QC(SAMPLE_MARKER_QC.out.genoprobs_cross)

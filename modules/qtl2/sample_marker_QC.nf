@@ -2,26 +2,26 @@ process SAMPLE_MARKER_QC {
 
   cpus 1
   memory {50.GB * task.attempt}
-  time {2.hour * task.attempt}
-  errorStrategy 'retry' 
-  maxRetries 3
+  time {1.hour * task.attempt}
+  errorStrategy { task.exitStatus == 138..143 ? 'retry' : 'terminate' }
+  maxRetries 1
 
   container 'docker://sjwidmay/lcgbs_hr:latest'
 
-  publishDir "${params.sample_folder}/geno_probs", pattern: "*.RData", mode:'copy'
+  publishDir "${projectDir}/results/${project_id}/QC", pattern: "*.RData", mode:'copy'
 
   input:
-  tuple file(cross), file(intensities)
+  tuple val(project_id), path(preQCdata), file(intensities)
 
   output:
-  path("QC_1.RData"), emit: qc_data
-  path("working_cross.RData"), emit: genoprobs_cross
+  tuple path("QC_1.RData"), val(project_id), emit: qc_data
+  tuple path("working_cross.RData"), val(project_id), emit: genoprobs_cross
 
   script:
-  log.info "----- Performing Initial Sample and Marker Quality Control -----"
+  log.info "----- Performing Initial Sample and Marker Quality Control: Project ${project_id} -----"
 
   """
-  Rscript --vanilla ${projectDir}/bin/scripts/qtl2/sampleQC.R ${cross} ${intensities}
+  Rscript --vanilla ${projectDir}/bin/scripts/qtl2/sampleQC.R ${preQCdata} ${intensities}
 
   """
 }

@@ -3,6 +3,8 @@ process WRITE_CROSS {
   cpus 16
   memory 50.GB
   time '01:00:00'
+  errorStrategy { task.exitStatus == 138..143 ? 'retry' : 'terminate' }
+  maxRetries 1
 
   container 'docker://sjwidmay/lcgbs_hr:latest'
 
@@ -14,7 +16,7 @@ process WRITE_CROSS {
   path(consensusFiles)
 
   output:
-  tuple path("*.RData"), val(project_id), path(covar_file), val(cross_type), emit: cross
+  tuple path("*.RData"), val(project_id), emit: cross
 
   script:
   log.info "----- Making Control Files, R/qtl2 Cross Object: Project ${project_id} -----"

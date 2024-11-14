@@ -17,8 +17,8 @@ process GS_TO_QTL2 {
   output:
   path("*geno*.csv"), emit: sampleGenos
   tuple file("covar.csv"), val(project_id), path(covar_file), val(cross_type), emit: qtl2meta
-  tuple path("*int.csv"), val(project_id), path(covar_file), val(cross_type), emit: qtl2ints
-  tuple path("*.fst"), val(project_id), path(covar_file), val(cross_type), emit: qtl2intsfst
+  tuple path("*int.csv"), val(project_id), emit: qtl2ints
+  tuple path("*.fst"), val(project_id), emit: qtl2intsfst
   
 
   script:
