@@ -25,15 +25,18 @@ include {QC_REPORT} from "${projectDir}/modules/markdown/render_QC_markdown"
 // save for starting point
 // check files for errors
 
-
-
-//FinalReports = Channel.fromPath("${params.sample_folder}/neogen_finalreports/*FinalReport*").collect()
+// Make channel of consensus files (GigaMUGA)
 GM_foundergenos = Channel.fromPath("${params.CCDOdataDir}/GM_foundergeno*").collect()
 GM_gmaps = Channel.fromPath("${params.CCDOdataDir}/GM_gmap*").collect()
 GM_pmaps = Channel.fromPath("${params.CCDOdataDir}/GM_pmap*").collect()
+consensusFiles = GM_foundergenos
+                    .concat(GM_gmaps)
+                    .concat(GM_pmaps)
+                    .flatten().collect()
+
 
 // QC and Haplotype Reconstruction Workflow
-workflow QC_HAP {
+workflow HR_QC {
     
 
     // Create channels
@@ -46,23 +49,19 @@ workflow QC_HAP {
                             cross_type = row.cross_type.toString() ]}
                     .groupTuple(by: 1)
                     .map {it -> [it[0], it[1], it[2].unique().flatten()[0], it[3].unique().flatten()[0]]}
-    project_ch.view()
 
     // Process FinalReport File
-    GS_TO_QTL2(FinalReports)
+    GS_TO_QTL2(project_ch)
+    metadata = GS_TO_QTL2.out.qtl2meta
+    sampleGenos = GS_TO_QTL2.out.sampleGenos
 
     // Write control file
-    //cross_elements = GS_TO_QTL2.out.qtl2genos
-    //					.mix(GM_foundergenos,GM_gmaps,GM_pmaps)
-    //					.flatten()
-    //					.collect()
-
-    //cross_elements.view()
-    //WRITE_CROSS(cross_elements)
+    WRITE_CROSS(metadata, sampleGenos, consensusFiles)
+    WRITE_CROSS.out.cross.view()
 
 
     // Perform initial sample QC
-    //sample_QC_files = WRITE_CROSS.out.cross
+    // sample_QC_files = WRITE_CROSS.out.cross
     //					.combine(GS_TO_QTL2.out.qtl2intsfst)
 
     //SAMPLE_MARKER_QC(sample_QC_files)

@@ -11,36 +11,37 @@ args <- commandArgs(trailingOnly = TRUE)
 cat(paste0(" -- R/qtl2 version: ",qtl2::qtl2version(),"\n"))
 cat(paste0(" -- R/qtl2convert version: ",packageVersion("qtl2convert"),"\n"))
 
-
 # GigaMUGA reference data directory
 GM_ref_dir <- args[1]
-# testing below
+
+# metadata file indicating which mice should be retained from array files
+metadata_path <- args[2]
+
+# FinalReport files
+ifiles <- args[3]
+
+# testing:
 # GM_ref_dir <- "/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/bin/CC_DO_data"
+# metadata_path <- "/flashscratch/widmas/QC_HAP_outputDir/work/56/68e36632c9cfe104234dbe6b2db36c/DO_ESC_covar.csv"
+# ifiles <- "/flashscratch/widmas/QC_HAP_outputDir/work/56/68e36632c9cfe104234dbe6b2db36c/finalreportlist.txt"
 
 # allele codes
 codefile <- file.path(GM_ref_dir,"GM_allelecodes.csv")
 
-# metadata file indicating which mice should be retained from array files
-metadata_path <- args[2]
+cat("Reading covar file")
 metadata <- read.csv(metadata_path)
-# testing below:
-# metadata_path <- "/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/do_oocyte/covar_files/DO_covar_nf.csv"
-# metadata <- read.csv(metadata_path)
 
 # input files with GigaMUGA genotypes
 # read in the FinalReport file table from nextflow
-ifiles <- args[3]
 finalreports <- read.table(ifiles)
 ifiles <- c(as.matrix(t(finalreports)))
-# testing below:
-# ifiles <- list.files("/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/do_oocyte/neogen_finalreports", full.names = T)
 
 # read genotype codes
 codes <- data.table::fread(codefile, skip = 3, data.table = F)
 
 full_geno <- NULL
 cXint <- cYint <- NULL
-
+excluded_samples <- vector("list", length(ifiles))
 for(ifile in ifiles) {
   cat(" -File:", ifile, "\n")
   rezip <- FALSE
@@ -51,25 +52,17 @@ for(ifile in ifiles) {
   }
   
   cat(" -Reading data\n")
-  g <- vroom::vroom(file = ifile, 
-                    skip = 9,
-                    num_threads = parallel::detectCores())
-  
-  # Using this line to manually match up genotyped sample names with
-  # sample names from metadata/phenotype files
-  g$`Sample ID` <- as.factor(g$`Sample ID`)
-  
-  # filter geneseek data to allele code markers
-  g <- g[which(g$`SNP Name` %in% codes$marker),]
-  g <- g[which(g$`Sample ID` %in% metadata$id),]
-  g$`Sample ID` <- as.character(g$`Sample ID`)
+  g <- vroom::vroom(file = ifile, skip = 9,
+                    num_threads = parallel::detectCores()/1.2)
+  g %<>%
+    dplyr::filter(`SNP Name` %in% codes$marker,
+                  `Sample ID` %in% metadata$id)
   
   # NOTE: may need to revise the IDs in the 2nd column
   samples <- unique(g$`Sample ID`)
   
   # matrix to contain the genotypes
-  geno <- matrix(nrow=nrow(codes),
-                 ncol=length(samples))
+  geno <- matrix(nrow=nrow(codes), ncol=length(samples))
   dimnames(geno) <- list(codes$marker, samples)
   
   # fill in matrix
@@ -84,17 +77,30 @@ for(ifile in ifiles) {
   cat(" -Encode genotypes\n")
   geno <- qtl2convert::encode_geno(geno, as.matrix(codes[,c("A","B")]))
   
+  # find samples with lots of missing genos off the bat
+  missing_geno_samples <- which(colSums(geno == "-")/nrow(geno) > 0.10)
+  cat(paste0(length(missing_geno_samples)," samples missing more than 10% of genotypes \n"))
+  if(length(missing_geno_samples) > 0){
+    geno <- geno[,-missing_geno_samples]
+    excluded_samples[[which(ifile == ifiles)]] <- missing_geno_samples
+  }
+  
+  
   if(is.null(full_geno)) {
     full_geno <- geno
   } else {
     # if any columns in both, use those from second set
-    full_geno <- qtl2convert::cbind_smother(full_geno, geno)
+    full_geno <- cbind(full_geno, geno)
   }
   
   # grab X and Y intensities
   cat(" -Grab X and Y intensities\n")
-  gX <- g[which(g$`SNP Name` %in% codes[which(codes$chr == "X"),]$marker),]
-  gY <- g[which(g$`SNP Name` %in% codes[which(codes$chr == "Y"),]$marker),]
+  # gX <- g[g[,"SNP Name"] %in% codes[codes$chr=="X","marker"],]
+  gX <- g %>%
+    dplyr::filter(`SNP Name` %in% codes[which(codes$chr == "X"),]$marker)
+  # gY <- g[g[,"SNP Name"] %in% codes[codes$chr=="Y","marker"],]
+  gY <- g %>%
+    dplyr::filter(`SNP Name` %in% codes[which(codes$chr == "Y"),]$marker)
   
   #### SAFE STOPPING POINT
   cX <- matrix(nrow=sum(codes$chr=="X"),
@@ -108,18 +114,19 @@ for(ifile in ifiles) {
     if(i==round(i,-1)) cat(" --Sample", i, "of", length(samples), "\n")
     wh <- (gX[,"Sample ID"]==samples[i])
     cX[gX[wh,]$`SNP Name`,i] <- (gX$X[wh] + gX$Y[wh])/2
+    # cX[gX[wh,"SNP Name"],i] <- (gX$X[wh] + gX$Y[wh])/2
     
     wh <- (gY[,"Sample ID"]==samples[i])
     cY[gY[wh,]$`SNP Name`,i] <- (gY$X[wh] + gY$Y[wh])/2
+    # cY[gY[wh,"SNP Name"],i] <- (gY$X[wh] + gY$Y[wh])/2
   }
-  
   if(is.null(cXint)) {
     cXint <- cX
     cYint <- cY
   } else {
     # if any columns in both, use those from second set
-    cXint <- qtl2convert::cbind_smother(cXint, cX)
-    cYint <- qtl2convert::cbind_smother(cYint, cY)
+    cXint <- cbind(cXint, cX)
+    cYint <- cbind(cYint, cY)
   }
   
   if(rezip) {
@@ -158,12 +165,19 @@ for(chrom in c(1:19,"X","Y","M")) {
 dat <- vector("list", length(ifiles))
 for(i in seq_along(ifiles)) {
   unzipped <- unzip(ifiles[i])
-  raw_unzipped <- vroom::vroom(file = unzipped, skip = 9,
-                               num_threads = parallel::detectCores())
-  filtered_unzipped <- raw_unzipped[which(raw_unzipped$`Sample ID` %in% metadata$id),]
-  filtered_unzipped$`Sample ID` <- as.character(filtered_unzipped$`Sample ID`)
-  dat[[i]] <- filtered_unzipped
-
+  pre_dat <- vroom::vroom(file = unzipped, skip = 9,
+                          num_threads = parallel::detectCores()/1.2)
+  ex_samples <- excluded_samples[[i]]
+  if(length(ex_samples) > 0){
+    dat[[i]] <- pre_dat %>%
+      dplyr::filter(`SNP Name` %in% rownames(full_geno),
+                    `Sample ID` %in% colnames(full_geno),
+                    !`Sample ID` %in% names(ex_samples))
+  } else {
+    dat[[i]] <- pre_dat %>%
+      dplyr::filter(`SNP Name` %in% rownames(full_geno),
+                    `Sample ID` %in% colnames(full_geno))
+  }
 }
 
 # rbind the results together, saving selected columns
@@ -176,7 +190,7 @@ X <- Y <- matrix(ncol=length(samples),
                  nrow=length(snps))
 dimnames(X) <- dimnames(Y) <- list(snps, samples)
 for(i in seq(along=samples)) {
-  message(i, " of ", length(samples))
+  cat(i, " of ", length(samples))
   tmp <- dat[which(dat$`Sample ID`==samples[i]),]
   X[,samples[i]] <- tmp$X
   Y[,samples[i]] <- tmp$Y
@@ -199,8 +213,4 @@ write_fst(result, "intensities.fst", compress=100)
 
 # write the covariate file with a generic name
 write.csv(metadata, "covar.csv", quote = F, row.names = F)
-
-
-
-
 
