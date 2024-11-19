@@ -11,7 +11,7 @@ process SAMPLE_MARKER_QC {
   publishDir "${projectDir}/results/${project_id}/QC", pattern: "*.RData", mode:'copy'
 
   input:
-  tuple val(project_id), path(preQCdata), file(intensities)
+  tuple val(project_id), path(preQCdata), val(nsamples), file(intensities)
 
   output:
   tuple path("QC_1.RData"), val(project_id), emit: qc_data

@@ -18,7 +18,7 @@ module load nextflow/23.10.1
 # RUN PIPELINE
 nextflow main.nf \
         --workflow SampleQC_Haplotype_Reconstruction \
-        --manifest 'sample_sheets/test_sheet.csv' \
+        --manifest 'sample_sheets/csna_test_sheet.csv' \
 	--pubdir '/flashscratch/widmas/HR_QC_outputDir' \
         -w '/flashscratch/widmas/HR_QC_outputDir/work' \
         --comment "This script will perform sample QC and haplotype reconstruction on genetically diverse mouse samples" \
