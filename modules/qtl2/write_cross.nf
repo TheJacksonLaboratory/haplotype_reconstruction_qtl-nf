@@ -1,29 +1,27 @@
 process WRITE_CROSS {
 
-  cpus 16
-  memory {50.GB * task.attempt}
-  time {nsamples/20 * 5.min}
+  memory 50.GB
+  time 1.hour
   errorStrategy 'retry'
-  maxRetries 4
+  maxRetries 1
 
   container 'docker://sjwidmay/lcgbs_hr:latest'
 
-  publishDir "${projectDir}/results/${project_id}/qtl2genos", pattern: "*.RData", mode:'copy'
-
   input:
-  tuple file(covar), val(project_id), path(covar_file), val(cross_type), val(nsamples)
-  path(sampleGenos)
+  tuple file(covar), val(project_id), val(cross_type)
+  tuple path(sampleGenos), file(excluded_samples)
   path(consensusFiles)
 
   output:
-  tuple path("*.RData"), val(project_id), val(nsamples), emit: cross
+  tuple path("*.rds"), val(project_id), file("excluded_samples_*"), emit: cross
 
   script:
-  log.info "----- Making Control Files, R/qtl2 Cross Object: Project ${project_id} -----"
-
   """
-  echo ${consensusFiles}
-
-  Rscript --vanilla ${projectDir}/bin/scripts/qtl2/writeControlFile.R ${projectDir}/results/${project_id}/qtl2genos
+  current_dir=\$(echo pwd)
+  hash=\$(\$current_dir | tail -c 9)
+  echo \$hash
+  Rscript --vanilla ${projectDir}/bin/scripts/qtl2/writeControlFile.R
+  mv preQC_cross.rds preQC_cross_\${hash}.rds
+  mv excluded_samples.csv excluded_samples_\${hash}.csv
   """
 }

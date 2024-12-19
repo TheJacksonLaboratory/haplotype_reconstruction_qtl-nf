@@ -9,9 +9,11 @@ nextflow.enable.dsl=2
 include {COUNT_SAMPLES} from "${projectDir}/modules/general/count_samples"
 include {GS_TO_QTL2} from "${projectDir}/modules/qtl2/geneseek2qtl2"
 include {WRITE_CROSS} from "${projectDir}/modules/qtl2/write_cross"
-include {SAMPLE_MARKER_QC} from "${projectDir}/modules/qtl2/sample_marker_QC"
-include {GENOPROBS_QC} from "${projectDir}/modules/qtl2/genoprobs_qc"
+include {GENOPROBS} from "${projectDir}/modules/qtl2/genoprobs"
+include {CONCAT_GENOPROBS} from "${projectDir}/modules/qtl2/concat_genoprobs"
 include {QC_REPORT} from "${projectDir}/modules/markdown/render_QC_markdown"
+
+// include {SAMPLE_MARKER_QC} from "${projectDir}/modules/qtl2/sample_marker_QC"
 
 // hold for including a help page if help if needed
 // if (params.help){
@@ -39,39 +41,45 @@ consensusFiles = GM_foundergenos
 // QC and Haplotype Reconstruction Workflow
 workflow HR_QC {
     
-    // Create channels for each project
+    // Create channels for each FinalReport file
     project_ch = Channel.fromPath("${params.manifest}")
-                    .splitCsv(header: true)
-                    .map {row -> 
-                            [ finalreport_file = row.finalreport_file,
-                            project_id = row.project_id,
-                            covar_file = row.covar_file,
-                            cross_type = row.cross_type ]}
-                    .groupTuple(by: 1)
-                    .map {it -> [it[0], it[1], it[2].unique().flatten()[0], it[3].unique().flatten()[0]]}
-    
-    // Count samples in each project to allocate memory
-    COUNT_SAMPLES(project_ch)
-
-    projectCount_ch = COUNT_SAMPLES.out.foo.map {tuple -> [tuple[0], tuple[1], tuple[2], tuple[3], 
-                                                        tuple[4].splitText()[0]
-                                                                .replaceAll("\\n", "")
-                                                                .toFloat()]}
+                        .splitCsv(header: true)
+                        .map {row -> 
+                        [ finalreport_file = row.finalreport_file,
+                          project_id = row.project_id,
+                          covar_file = row.covar_file,
+                          cross_type = row.cross_type ]}
+                        // *** snippet to process by project instead of by FinalReport ***
+                        //.groupTuple(by: 1)
+                        //.map {it -> [it[0], it[1], it[2].unique().flatten()[0], it[3].unique().flatten()[0]]}
 
     // Process FinalReport File
-    GS_TO_QTL2(projectCount_ch)
+    GS_TO_QTL2(project_ch)
+    intensities = GS_TO_QTL2.out.qtl2intsfst.groupTuple(by: 1)
     metadata = GS_TO_QTL2.out.qtl2meta
     sampleGenos = GS_TO_QTL2.out.sampleGenos
 
     // Write control file
     WRITE_CROSS(metadata, sampleGenos, consensusFiles)
 
-    // Perform initial sample QC
-    sampleQCFiles = WRITE_CROSS.out.cross.join(GS_TO_QTL2.out.qtl2intsfst, by: [1, 1])
-    SAMPLE_MARKER_QC(sampleQCFiles)
+    // Initial haplotype reconstruction
+    GENOPROBS(WRITE_CROSS.out.cross)
 
-    // Initial haplotype reconstruction for genotyping errors and crossover estimation
-    GENOPROBS_QC(SAMPLE_MARKER_QC.out.genoprobs_cross)
+    // Gather by project id
+    project_genoprobs = GENOPROBS.out.genoprobs.groupTuple(by: 1)
+
+    // Concatenate genoprobs across projects and perform marker QC
+    CONCAT_GENOPROBS(project_genoprobs)
+
+
+
+
+
+    
+    
+    // Perform initial sample QC
+    //SAMPLE_MARKER_QC(crosses)
+
 
 
     // Render the QC report

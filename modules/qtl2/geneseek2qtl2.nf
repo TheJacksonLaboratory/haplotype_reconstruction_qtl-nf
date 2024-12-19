@@ -1,35 +1,32 @@
 process GS_TO_QTL2 {
   
-  time {nsamples/20 * 2.min}
-  cpus 32 
-  memory {100.GB * task.attempt}
-  errorStrategy 'retry'
-  maxRetries 4
+  cpus 2
+  time 1.hour
+  memory 50.GB
+  errorStrategy {(task.exitStatus == 1) ? {log.info "\n\nError code: ${task.exitStatus} for task: ${task.name}.\n Please check ${projectDir}/results/${project_id}/logs.\n Also, please verify that sample names in metadata match those expected in FinalReport file(s).\n\n"; return 'ignore'}.call() : 'finish'}
 
   container 'docker://sjwidmay/lcgbs_hr:latest'
 
-  publishDir "${projectDir}/results/${project_id}/intensities", pattern: "*int.csv", mode:'copy'
-  publishDir "${projectDir}/results/${project_id}/intensities", pattern: "*.fst", mode:'copy'
-
   input:
-  tuple path(finalreport_files), val(project_id), path(covar_file), val(cross_type), val(nsamples)
+  tuple path(finalreport_files), val(project_id), path(covar_file), val(cross_type)
 
   output:
-  path("*geno*.csv"), emit: sampleGenos
-  tuple file("covar.csv"), val(project_id), path(covar_file), val(cross_type), val(nsamples), emit: qtl2meta
+  tuple path("*geno*.csv"), file("excluded_samples.csv"), emit: sampleGenos
+  tuple file("covar.csv"), val(project_id), val(cross_type), emit: qtl2meta
   tuple path("*int.csv"), val(project_id), emit: qtl2ints
   tuple path("*.fst"), val(project_id), emit: qtl2intsfst
 
 
   script:
-  log.info "----- Processing FinalReport Files: Project ${project_id} -----"
-
   """
-  echo ${finalreport_files} > finalreportlist.txt
-
   Rscript --vanilla ${projectDir}/bin/scripts/qtl2/geneseek2qtl2_nf.R \
 	${params.CCDOdataDir} \
 	${covar_file} \
-	finalreportlist.txt
+	${finalreport_files} \
+  ${params.max_pct_missing}
+
+  current_dir=\$(echo pwd)
+  hash=\$(\$current_dir | tail -c 9)
+  mv intensities.fst intensities_\${hash}.fst
   """
 }

@@ -10,42 +10,45 @@ library(dplyr)
 # samuel.widmayer@jax.org
 # 20241113
 ################################################################################ 
+# test_dir = "/flashscratch/widmas/HR_QC_outputDir/work/68/ef184fcd68dea2c5105c991d019c15"
 # setwd(test_dir)
 args <- commandArgs(trailingOnly = TRUE)
 
 # covar file
 covar_file <- "covar.csv"
-# covar_file <- file.path(test_dir,"covar.csv")
 
 # make the control file in the output directory?
-sample_geno_ostem <- args[1]
-# sample_geno_ostem <- '/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/do_oocyte/qtl2genos'
-cat(" --Genotype file output directory:")
-print(sample_geno_ostem)
+# sample_geno_ostem <- args[1]
+
+# cat(" --Genotype file output directory:")
+# print(sample_geno_ostem)
 
 cat(" --Current working directory:")
 print(getwd())
 
-# read in covariate file
+# read in covariate file and make sex codes uniform
 covar <- read.csv(covar_file, stringsAsFactors = F)
-covar$sex[covar$sex == "female" | covar$sex == "f"] <- "F"
+covar$sex[covar$sex == "female" | covar$sex == "f" | covar$sex == "FALSE" | covar$sex == FALSE] <- "F"
 covar$sex[covar$sex == "male" | covar$sex == "m"] <- "M"
+
+# write out new covar file
 covar <- covar %>%
   dplyr::select(id, sex, gen, everything())
 write.csv(x = covar, file = "sex_corrected_covar.csv", row.names = F, quote = F)
 
 # move elements to one directory for reference and for proper cross paths
-dir.create(sample_geno_ostem, showWarnings = T, recursive = T)
-system(paste0("mv GM*.csv ",sample_geno_ostem))
-system(paste0("mv geno*.csv ",sample_geno_ostem))
-system(paste0("mv sex_corrected_covar.csv ",sample_geno_ostem))
+ostem = file.path(getwd(),"out")
+dir.create(ostem, showWarnings = T, recursive = T)
+system(paste0("mv GM*.csv ",ostem))
+system(paste0("mv geno*.csv ",ostem))
+system(paste0("mv sex_corrected_covar.csv ",ostem))
 
 # Write control file
 chr <- c(1:19, "X")
 cat(" -Writing control file\n")
 # for now stick with "do" cross type, eventually take a crosstype param
 if(length(unique(covar$sex)) > 1){
-  qtl2::write_control_file(output_file = file.path(sample_geno_ostem,"QC_HAP.json"),
+  qtl2::write_control_file(output_file = file.path(ostem,"QC_HAP.json"),
                            crosstype="do",
                            founder_geno_file=paste0("GM_foundergeno", chr, ".csv"),
                            founder_geno_transposed=TRUE,
@@ -62,7 +65,7 @@ if(length(unique(covar$sex)) > 1){
                            overwrite = T)
 } else if(unique(covar$sex) == "F"){
   cat(" Note: only females present in cross.\n")
-  qtl2::write_control_file(output_file = file.path(sample_geno_ostem,"QC_HAP.json"),
+  qtl2::write_control_file(output_file = file.path(ostem,"QC_HAP.json"),
                            crosstype="do",
                            # description="QC_HAP",
                            founder_geno_file=paste0("GM_foundergeno", chr, ".csv"),
@@ -80,7 +83,7 @@ if(length(unique(covar$sex)) > 1){
                            overwrite = T)
 } else {
   cat(" Note: only males present in cross.\n")
-  qtl2::write_control_file(output_file = file.path(sample_geno_ostem,"QC_HAP.json"),
+  qtl2::write_control_file(output_file = file.path(ostem,"QC_HAP.json"),
                            crosstype="do",
                            # description="QC_HAP",
                            founder_geno_file=paste0("GM_foundergeno", chr, ".csv"),
@@ -98,13 +101,9 @@ if(length(unique(covar$sex)) > 1){
                            overwrite = T)
 }
 
-
+ 
 cat(" -Reading control file\n")
 # read cross
-cross <- qtl2::read_cross2(file = file.path(sample_geno_ostem,"QC_HAP.json"), quiet = F)
-save(cross, file = "preQC_cross.RData")
-
-# remove qtl2 files from results
-system(paste("mv", file.path(sample_geno_ostem,"GM*.csv"), getwd()))
-system(paste("mv", file.path(sample_geno_ostem,"geno*.csv"), getwd()))
+cross <- qtl2::read_cross2(file = file.path(ostem,"QC_HAP.json"), quiet = F)
+saveRDS(cross, file = "preQC_cross.rds")
 

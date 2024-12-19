@@ -16,15 +16,49 @@ hr_nf_dir <- '/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf
 # output directory
 out_dir <- file.path(hr_nf_dir,"sample_sheets")
 
+# today
+today <- gsub("-","",Sys.Date())
+
 # neogen files
-finalreport_file <- list.files(hr_nf_dir, pattern = "FinalReport", recursive = T, full.names = T)[1:8]
+finalreport_file <- list.files(hr_nf_dir, pattern = "FinalReport", recursive = T, full.names = T)
 
 # project ids
-project_id <- unlist(lapply(finalreport_files, function(x) strsplit(x,"/")[[1]][[9]]))
+project_id <- unlist(lapply(finalreport_file, function(x) strsplit(x,"/")[[1]][[9]]))
+
+# read in CSNA metadata
+CSNA_metadata <- read.csv(list.files(file.path(hr_nf_dir, "projects"), full.names = T, pattern = "CSNA", recursive = T))
+trimmed_CSNA_metadata <- CSNA_metadata %>%
+  dplyr::select(Sample.ID, Sex, DO.Generation, chrM) %>%
+  dplyr::rename(id = Sample.ID,
+                sex = Sex,
+                gen = DO.Generation)
+write.csv(trimmed_CSNA_metadata, file.path(hr_nf_dir, "projects/CSNA/csna_covar.csv"), quote = F, row.names = F)
+
+# read in Attie metadata
+attie_metadata_files <- list.files(file.path(hr_nf_dir,"projects/Attie"), pattern = "inventory", full.names = T)
+attie_metadata <- lapply(attie_metadata_files, function(x) suppressMessages(readr::read_csv(x, trim_ws = T))) %>%
+  Reduce(dplyr::bind_rows,.)
+trimmed_attie_metadata <- attie_metadata %>%
+  dplyr::select(`Unique Sample ID`,Sex,`DO Generation`,`Animal ID`) %>%
+  dplyr::rename(id = `Unique Sample ID`,
+                sex = Sex,
+                gen = `DO Generation`)
+write.csv(trimmed_attie_metadata, file.path(hr_nf_dir, "projects/Attie/covar_files/attie_covar.csv"), quote = F, row.names = F)
+
+# read in Beamer metadata
+beamer_metadata <- read.csv(file.path(hr_nf_dir, "projects/Beamer/tufts_animal_inventory.csv"), tryLogical = F)
+trimmed_beamer_metadata <- beamer_metadata %>%
+  dplyr::select(Animal.ID, Sex, DO.Generation, Strain) %>%
+  dplyr::rename(id = Animal.ID,
+                sex = Sex,
+                gen = DO.Generation)
+write.csv(trimmed_beamer_metadata, file.path(hr_nf_dir, "projects/Beamer/covar_files/beamer_covar.csv"), quote = F, row.names = F)
+
+# Make total manifest
 
 # covar files
-covar_file <- unlist(lapply(project_ids, function(x){
-  list.files(file.path(hr_nf_dir, "projects", x, "covar_files"), recursive = T, full.names = T)
+covar_file <- unlist(lapply(project_id, function(x){
+  list.files(file.path(hr_nf_dir, "projects", x, "covar_files"), pattern = "covar", recursive = T, full.names = T)
 }))
 
 # cross type
@@ -34,5 +68,5 @@ cross_type <- rep("do", length(covar_file))
 manifest <- data.frame(finalreport_file, project_id, covar_file, cross_type)
 
 # write manifest
-write.csv(manifest, file = file.path(out_dir,"test_sheet.csv"), quote = F, row.names = F)
+write.csv(manifest, file = file.path(out_dir,paste0(today,"_hr-nf_manifest.csv")), quote = F, row.names = F)
 
