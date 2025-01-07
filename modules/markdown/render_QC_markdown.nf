@@ -6,21 +6,20 @@ process QC_REPORT {
 
   container 'docker://sjwidmay/haplotype_reconstruction_qtl_nf:qc_markdown'
 
-  publishDir "${params.sample_folder}/report", pattern: "*", mode:'copy'
+  publishDir "${params.pubdir}/projects/${project_id}/results", pattern:"*", mode:'copy'
 
   input:
-  tuple file(cross), file(geno_probs), file(allele_probs), file(viterbi), file(crossovers), file(genotyping_erros), file(original_cross), file(x_ints), file(y_ints), file(sample_qc_data)
+  tuple val(project_id), file(excluded_samples), file(genoprobs), file(alleleprobs), file(cross), file(viterbi), file(genotyping_errors), file(x_intensities), file(y_intensities), file(all_marker_intensities)
 
   output:
-  tuple file("QC_markdown.html"), file("QC_markdown.Rmd"), file("sample_QC_result.csv"), emit: qc_markdown
+  tuple file("sample_QC.csv"), file("bad_markers.rds"), file("QC_markdown.html"), file("QC_markdown.Rmd"), emit: qc_markdown
 
   script:
-  log.info "----- Rendering Quality Control Report -----"
 
   """
   ls ${projectDir}/bin/scripts/markdown/QC_profile_template.Rmd
   cat ${projectDir}/bin/scripts/markdown/QC_profile_template.Rmd > QC_markdown_working.Rmd
-  Rscript --vanilla ${projectDir}/bin/scripts/markdown/render_markdown.R QC_markdown_working.Rmd ${projectDir}/${params.sample_folder}
+  Rscript --vanilla ${projectDir}/bin/scripts/markdown/render_markdown.R QC_markdown_working.Rmd
   mv QC_markdown_working.html QC_markdown.html
   mv QC_markdown_working.Rmd QC_markdown.Rmd
   """

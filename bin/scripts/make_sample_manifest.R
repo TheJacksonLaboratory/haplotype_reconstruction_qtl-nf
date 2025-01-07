@@ -26,7 +26,7 @@ finalreport_file <- list.files(hr_nf_dir, pattern = "FinalReport", recursive = T
 project_id <- unlist(lapply(finalreport_file, function(x) strsplit(x,"/")[[1]][[9]]))
 
 # read in CSNA metadata
-CSNA_metadata <- read.csv(list.files(file.path(hr_nf_dir, "projects"), full.names = T, pattern = "CSNA", recursive = T))
+CSNA_metadata <- read.csv(file.path(hr_nf_dir, "projects/CSNA/CSNA_metadata.csv"))
 trimmed_CSNA_metadata <- CSNA_metadata %>%
   dplyr::select(Sample.ID, Sex, DO.Generation, chrM) %>%
   dplyr::rename(id = Sample.ID,
@@ -54,6 +54,13 @@ trimmed_beamer_metadata <- beamer_metadata %>%
                 gen = DO.Generation)
 write.csv(trimmed_beamer_metadata, file.path(hr_nf_dir, "projects/Beamer/covar_files/beamer_covar.csv"), quote = F, row.names = F)
 
+# read in Baker metadata
+baker_metadata <- read.csv("/projects/compsci/vmp/USERS/widmas/Baker_DO_scRNAseq/DO_sampleIDs_update.csv", tryLogical = F)
+wrangled_baker_metadata  <- baker_metadata %>%
+  dplyr::rename(id = gigamuga_sampleID,
+                gen = generation) %>%
+  dplyr::select(id, sex, gen, everything())
+write.csv(wrangled_baker_metadata, file.path(hr_nf_dir, "projects/Baker/covar_files/baker_covar.csv"), quote = F, row.names = F)
 # Make total manifest
 
 # covar files

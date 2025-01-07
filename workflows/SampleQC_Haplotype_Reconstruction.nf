@@ -11,6 +11,7 @@ include {GS_TO_QTL2} from "${projectDir}/modules/qtl2/geneseek2qtl2"
 include {WRITE_CROSS} from "${projectDir}/modules/qtl2/write_cross"
 include {GENOPROBS} from "${projectDir}/modules/qtl2/genoprobs"
 include {CONCAT_GENOPROBS} from "${projectDir}/modules/qtl2/concat_genoprobs"
+include {CONCAT_INTENSITIES} from "${projectDir}/modules/qtl2/concat_intensities"
 include {QC_REPORT} from "${projectDir}/modules/markdown/render_QC_markdown"
 
 // include {SAMPLE_MARKER_QC} from "${projectDir}/modules/qtl2/sample_marker_QC"
@@ -49,15 +50,22 @@ workflow HR_QC {
                           project_id = row.project_id,
                           covar_file = row.covar_file,
                           cross_type = row.cross_type ]}
-                        // *** snippet to process by project instead of by FinalReport ***
-                        //.groupTuple(by: 1)
-                        //.map {it -> [it[0], it[1], it[2].unique().flatten()[0], it[3].unique().flatten()[0]]}
 
     // Process FinalReport File
     GS_TO_QTL2(project_ch)
-    intensities = GS_TO_QTL2.out.qtl2intsfst.groupTuple(by: 1)
     metadata = GS_TO_QTL2.out.qtl2meta
     sampleGenos = GS_TO_QTL2.out.sampleGenos
+    
+    // Gather intensities by project id
+    sexchr_intensities = GS_TO_QTL2.out.qtl2ints
+                                    .groupTuple(by: 1)
+                                    .map {it -> [it[0].flatten(), it[1]]}
+
+    all_intensities = GS_TO_QTL2.out.qtl2intsfst.groupTuple(by: 1)
+    qc_intensities = sexchr_intensities.join(all_intensities, by: [1, 1])
+
+    // Concatenate intensities across projects for QC
+    CONCAT_INTENSITIES(qc_intensities)
 
     // Write control file
     WRITE_CROSS(metadata, sampleGenos, consensusFiles)
@@ -65,29 +73,16 @@ workflow HR_QC {
     // Initial haplotype reconstruction
     GENOPROBS(WRITE_CROSS.out.cross)
 
-    // Gather by project id
+    // Gather genoprobs by project id
     project_genoprobs = GENOPROBS.out.genoprobs.groupTuple(by: 1)
 
     // Concatenate genoprobs across projects and perform marker QC
     CONCAT_GENOPROBS(project_genoprobs)
 
-
-
-
-
-    
-    
-    // Perform initial sample QC
-    //SAMPLE_MARKER_QC(crosses)
-
-
+    // Join all the hr elements
+    qc_data = CONCAT_GENOPROBS.out.concat_probs.join(CONCAT_INTENSITIES.out.concat_intensities)
 
     // Render the QC report
-    //report_data = GENOPROBS_QC.out.genoprob_qc
-    //			.combine(WRITE_CROSS.out.cross)
-    //			.combine(GS_TO_QTL2.out.qtl2ints)
-    //			.combine(SAMPLE_MARKER_QC.out.qc_data)
-    //report_data.view()
-    //QC_REPORT(report_data)
+    QC_REPORT(qc_data)
 
 }

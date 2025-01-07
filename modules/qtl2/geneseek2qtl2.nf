@@ -28,5 +28,7 @@ process GS_TO_QTL2 {
   current_dir=\$(echo pwd)
   hash=\$(\$current_dir | tail -c 9)
   mv intensities.fst intensities_\${hash}.fst
+  mv chrYint.csv chrY_\${hash}_int.csv
+  mv chrXint.csv chrX_\${hash}_int.csv
   """
 }

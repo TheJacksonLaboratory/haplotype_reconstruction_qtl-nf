@@ -11,7 +11,6 @@ date: "`r format(Sys.time(), '%m-%d-%Y')`"
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, dev = "png", fig.width = 8, fig.height = 6)
 library(purrr)
 library(dplyr)
 library(tidyr)
@@ -21,74 +20,60 @@ library(knitr)
 library(qtl2)
 library(broman)
 library(qtlcharts)
-summaryPlotTheme <- theme_bw(base_size = 14) + 
-  theme(panel.grid = element_blank(),
-        axis.title = element_text(colour = "black"))
-args <- commandArgs(trailingOnly = TRUE)
-options(scipen = 9999999)
+library(fst)
 
+# project directory
+knitr::opts_knit$set(root.dir = getwd())
+knitr::opts_chunk$set(echo = TRUE, dev = "png")
+options(scipen = 999999)
 ```
 
 ## Load Data
 
 ```{r load data}
-
-# QC output 1
-load("QC_1.RData")
-# load("/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/DO_ESC/geno_probs/QC_1.RData")
-
 # cross object
-load("preQC_cross.RData")
-# load("/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/DO_ESC/geno_probs/preQC_cross.RData")
+cross <- readRDS(list.files(pattern = "cross.rds", recursive = T, full.names = T))
 
 # x chromosome intensities
-xint_file <- "chrXint.csv"
-xint <- qtl2::fread_csv_numer(xint_file, transpose = TRUE)
-
-# for testing
-# xint_file <- "/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/do_oocyte/qtl2genos/chrXint.csv"
-# xint <- qtl2::read_csv_numer(xint_file, transpose = TRUE)
+xint <- read.csv(list.files(pattern = "chrX_intensities.csv", recursive = T, full.names = T))
 
 # y chromosome intensities
-yint_file <- "chrYint.csv"
-yint <- qtl2::fread_csv_numer(yint_file, transpose=TRUE)
+yint <- read.csv(list.files(pattern = "chrY_intensities.csv", recursive = T, full.names = T))
 
-#for testing
-# yint_file <- "/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/do_oocyte/qtl2genos/chrYint.csv"
-# yint <- qtl2::read_csv_numer(yint_file, transpose = TRUE)
+# intensities
+int <- fst::read.fst(list.files(pattern = "all_intensities.fst", recursive = T, full.names = T))
 
-# crossover counts
-load("nxos.RData")
-# load("/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/projects/DO_ESC/geno_probs/nxos.RData")
+# viterbi
+m <- readRDS(list.files(pattern = "maxmarg.rds", recursive = T, full.names = T))
+
+# genoprob errors
+e <- readRDS(list.files(pattern = "genotyping_errors.rds", recursive = T, full.names = T))
 ```
 
 ## Project Metrics
 
-There were `r qtl2::n_ind(cross)` samples in the original experiment, comprising `r nrow(cross$covar[which(cross$covar$sex == "F"),])` females and `r nrow(cross$covar[which(cross$covar$sex == "M"),])` males. There were a total of `r sum(qtl2::n_mar(cross))` informative markers.
+There were `r qtl2::n_ind(cross)` samples in the original experiment, comprising `r nrow(cross$covar[which(cross$covar$sex %in% c("f","F","female")),])` females and `r nrow(cross$covar[which(cross$covar$sex %in% c("m","M","male")),])` males. There were a total of `r sum(qtl2::n_mar(cross))` informative markers among `r length(qtl2::n_typed(cross))` genotyped individuals.
 
 ## Marker Metrics
 
 ### Missing Genotypes
 
-```{r distribution of missing marker genotypes}
-hist(percent_missing_marker, breaks = 100, 
+```{r, missing marker genotypes}
+# calculate what percent of samples are missing each marker
+percent_missing_marker <- qtl2::n_missing(cross, "marker", "prop")*100
+
+# plot
+hist(percent_missing_marker, breaks = 100,
      main = "Distribution of the proportion of samples missing each marker", 
      xlab = "Percent of samples missing genotype",
      ylab = "Number of genotypes")
 
+# extract bad markers
 remaining_markers_10pct <- length(which(percent_missing_marker > 10))/sum(n_mar(cross))
-remaining_markers_5pct <- length(which(percent_missing_marker > 5))/sum(n_mar(cross))
+bad_markers <- names(percent_missing_marker[which(percent_missing_marker > 10)])
 ```
 
-Of all markers, `r paste0(round(remaining_markers_10pct*100),"%")` of markers were missing in 10% of samples and `r paste0(round(remaining_markers_5pct*100),"%")` in 5% of samples. We removed markers according to the latter threshold.
-
-```{r showing marker depletion}
-# cross with bad markers removed
-cat("Original cross: \n")
-qtl2::n_mar(cross)
-cat("\nMarkers cleaned: \n")
-qtl2::n_mar(working_cross)
-```
+Of all markers, `r length(bad_markers)` markers were missing in at least 10% of samples.
 
 ## Sample Metrics
 
@@ -96,7 +81,7 @@ qtl2::n_mar(working_cross)
 
 ```{r missing genotypes}
 # label values with mouse ids
-percent_missing_ind_cross <- qtl2::n_missing(working_cross, "ind", "prop")*100
+percent_missing_ind_cross <- qtl2::n_missing(cross, "ind", "prop")*100
 labels <- paste0(names(percent_missing_ind_cross), " (", round(percent_missing_ind_cross), "%)")
 
 # count number of samples at different missingness thresholds
@@ -110,22 +95,42 @@ qtlcharts::iplot(x = seq_along(percent_missing_ind_cross),
                                 ylab="Percent missing genotype data",
                                 ylim=c(0, 100))) %>% suppressMessages()
 
+# view intensities
+int <- int[int$snp %in% qtl2::marker_names(cross),]
+int <- int[seq(1, nrow(int), by=2),-(1:2)] + int[-seq(1, nrow(int), by=2),-(1:2)]
+int <- int[,which(colnames(int) %in% qtl2::ind_ids(cross))]
 n <- names(sort(percent_missing_ind_cross, decreasing=TRUE))
 iboxplot(log10(t(int[,n])+1), orderByMedian=FALSE, chartOpts=list(ylab="log10(SNP intensity + 1)"))
 ```
 
 There were:
 
-- `r missing_thresh[1]` samples missing genotypes for more than 1% of markers,
-- `r missing_thresh[2]` samples missing more than 5%, 
-- `r missing_thresh[3]` samples missing more than 10%, and
-- `r missing_thresh[4]` samples missing more than 20%.
+-   `r missing_thresh[1]` samples missing genotypes for more than 1% of markers,
+-   `r missing_thresh[2]` samples missing more than 5%,
+-   `r missing_thresh[3]` samples missing more than 10%, and
+-   `r missing_thresh[4]` samples missing more than 20%.
+
+### Genotyping errors
+
+Statistical support for genotyping errors among samples was calculated from the genotype probabilities.
+
+```{r display the distri}
+e <- do.call("cbind", e)
+errors_ind <- rowSums(e>2)/n_typed(cross)*100
+lab <- paste0(names(errors_ind), " (", round(percent_missing_ind_cross,1), "% missing genotypes)")
+iplot(x = seq_along(errors_ind), y = errors_ind, indID=lab,
+      chartOpts=list(xlab="Mouse", ylab="Percent genotyping errors", ylim=c(0, 4.1),
+                     axispos=list(xtitle=25, ytitle=50, xlabel=5, ylabel=5)))
+```
 
 ### Sample duplicates
 
 Below is a list of sample pairs flagged as sample duplicates (if there were any). A histogram of the proportion of matching genotypes between all sample pairs is also provided.
 
 ```{r sample duplicates}
+# Sample Duplicates
+cg <- compare_geno(cross, cores=parallel::detectCores()/2)
+
 # default qtl2 report for sample duplicates
 summary(cg)
 
@@ -137,71 +142,63 @@ rug(cg[upper.tri(cg)])
 
 ### Sex Checks
 
-```{r sex checks}
+```{r calculating average sex chr intensities}
+# average the good X markers
+filtered_xint <- xint %>%
+  dplyr::filter(!marker %in% names(which(percent_missing_marker > 5)))
+xint_ave <- data.frame(colMeans(filtered_xint[complete.cases(filtered_xint),-1])) %>%
+  dplyr::mutate(sample = rownames(.))
+colnames(xint_ave) <- c("ave_x","sample")
+rownames(xint_ave) <- NULL
 
-# take average X chromosome probe intensity for non-null markers
-# are any or all of the Y chromosome markers bad?
-if(all(colnames(xint) %in% names(which(percent_missing_marker > 5)))){
-  # just use what we have
-  xint[is.na(xint)] <- mean(xint[!is.na(xint)])
-  xint_ave <- rowMeans(xint[complete.cases(xint),])
-} else if(any(colnames(xint) %in% names(which(percent_missing_marker > 5)))){
-  # remove the bad markers
-  xint <- xint[,-which(colnames(xint) %in% names(which(percent_missing_marker > 5)))]
-  xint[is.na(xint)] <- mean(xint[!is.na(xint)])
-  xint_ave <- rowMeans(xint[complete.cases(xint),])
-} else {
-  xint[is.na(xint)] <- mean(xint[!is.na(xint)])
-  xint_ave <- rowMeans(xint[complete.cases(xint),])
-}
-
-
-# take average Y chromosome probe intensity for non-null markers
-# are any or all of the Y chromosome markers bad?
-if(all(colnames(yint) %in% names(which(percent_missing_marker > 5)))){
-  # just use what we have
-  yint[is.na(yint)] <- mean(yint[!is.na(yint)])
-  yint_ave <- rowMeans(yint[complete.cases(yint),])
-} else if(any(colnames(yint) %in% names(which(percent_missing_marker > 5)))){
-  # remove the bad markers
-  yint <- yint[,-which(colnames(yint) %in% names(which(percent_missing_marker > 5)))]
-  yint[is.na(yint)] <- mean(yint[!is.na(yint)])
-  yint_ave <- rowMeans(yint[complete.cases(yint),])
-} else {
-  yint[is.na(yint)] <- mean(yint[!is.na(yint)])
-  yint_ave <- rowMeans(yint[complete.cases(yint),])
-}
+# average the good Y markers
+filtered_yint <- yint %>%
+  dplyr::filter(!marker %in% names(which(percent_missing_marker > 5)))
+yint_ave <- data.frame(colMeans(filtered_yint[complete.cases(filtered_yint),-1])) %>%
+  dplyr::mutate(sample = rownames(.))
+colnames(yint_ave) <- c("ave_y","sample")
+rownames(yint_ave) <- NULL
 
 # put the Chr X and Y intensities together
-ave_int <- data.frame(cbind(xint_ave, yint_ave)) %>%
-  dplyr::mutate(sample = rownames(.))
-ave_int <- cbind(ave_int,cross$covar[which(rownames(cross$covar) %in% rownames(ave_int)),])
+ave_int <- dplyr::left_join(xint_ave, yint_ave) %>%
+  dplyr::select(sample, everything())
+sex_int_covar <- data.frame(cross$covar) %>% 
+  dplyr::mutate(sample = rownames(.)) %>%
+  dplyr::left_join(., ave_int) %>%
+  dplyr::select(sample, ave_x, ave_y, sex, everything())
 
+# categorize samples into predicted sex chromosome genotypes using intensities
+ave_int_predicted <- sex_int_covar %>%
+  dplyr::mutate(predicted_sex = dplyr::case_when(ave_x > 0.45 & ave_y < 0.15 ~ "F",
+                                             ave_x < 0.45 & ave_y < 0.15 ~ "XO",
+                                             ave_x > 0.45 & ave_y > 0.15 ~ "XXY",
+                                             ave_x < 0.45 & ave_y > 0.15 ~ "M")) %>%
+  dplyr::select(sample, sex, predicted_sex, everything())
+percent_missing_ind_df <- data.frame(percent_missing_ind_cross) %>%
+  dplyr::mutate(sample = rownames(.)) %>% 
+  dplyr::mutate(percent_missing = paste0(round(percent_missing_ind_cross,2),"%"))
+rownames(percent_missing_ind_df) <- NULL
+sex_check_df <- dplyr::left_join(ave_int_predicted, percent_missing_ind_df) %>%
+  dplyr::mutate(assigned_sex = sex)
+```
+
+We used the mean intensities of probes from each sex chromosome to infer the genetic sex of each individual.
+
+```{r plot xint by yint}
 # make cutoffs df
 categories_df <- data.frame(c(0.25,0.5,0.25,0.5),
                             c(0.5,0.5,0.1,0.1),
                             c("M","XXY","XO","F"))
-colnames(categories_df) <- c("X","Y","sex")
+colnames(categories_df) <- c("X","Y","assigned_sex")
 
 # sex palette
 pal <- c("green","brown","pink","purple")
-names(pal) <- categories_df$sex
-
-# categorize samples
-ave_int <- ave_int %>%
-  dplyr::mutate(predicted_sex = dplyr::case_when(xint_ave > 0.45 & yint_ave < 0.15 ~ "F",
-                                             xint_ave < 0.45 & yint_ave < 0.15 ~ "XO",
-                                             xint_ave > 0.45 & yint_ave > 0.15 ~ "XXY",
-                                             xint_ave < 0.45 & yint_ave > 0.15 ~ "M"),
-                sample = rownames(.))
-
-ave_int <- cbind(ave_int, percent_missing_ind_cross) %>%
-  dplyr::mutate(percent_missing = paste0(round(percent_missing_ind_cross,2),"%"))
+names(pal) <- categories_df$assigned_sex
 
 sex_check_plot <- ggplot() +
-  geom_jitter(ave_int, mapping = aes(x = xint_ave, y = yint_ave, 
+  geom_jitter(sex_check_df, mapping = aes(x = ave_x, y = ave_y, 
                                      fill = predicted_sex, 
-                                     label = sample,
+                                     label = assigned_sex,
                                      label2 = percent_missing), 
               size = 3, shape = 21) +
   scale_fill_manual(values = pal) + 
@@ -212,87 +209,173 @@ sex_check_plot <- ggplot() +
   suppressWarnings()
 
 # interactive sex check plot
-plotly::ggplotly(sex_check_plot, tooltip = c("sample","percent_missing"))
+plotly::ggplotly(sex_check_plot, tooltip = c("assigned_sex","percent_missing"))
+```
 
+We used the fraction of heterozygous genotypes called on the X chromosome to obtain additional support.
 
-pHet <- rowSums(working_cross$geno$X == 2)/rowSums(working_cross$geno$X != 0)
-pHet <- cbind(ave_int, pHet)
+```{r plot phet by xint}
+# proportion of heterozygous X SNPs
+pHet <- rowSums(cross$geno$X == 2)/rowSums(cross$geno$X != 0)
+pHet_df <- data.frame(pHet) %>%
+  dplyr::mutate(sample = rownames(.))
+pHet_sexes <- dplyr::left_join(sex_check_df, pHet_df)
 pHet_plot <- ggplot() +
-  geom_jitter(pHet, mapping = aes(x = xint_ave, y = pHet, 
+  geom_jitter(data = pHet_sexes, mapping = aes(x = ave_x, y = pHet, 
                                   fill = predicted_sex, 
-                                  label = sample,
+                                  label = assigned_sex,
                                   label2 = percent_missing), 
               size = 3, shape = 21) +
   scale_fill_manual(values = pal) +
-  # geom_hline(yintercept = 0.15) + 
-  # geom_vline(xintercept = 0.45) +
   labs(x = "Mean Chr X Probe Intensity",
        y = "Proportion Heterozygous Chr X Genotypes") %>%
   suppressWarnings()
 
 # interactive pHet plot
-plotly::ggplotly(pHet_plot, tooltip = c("sample","percent_missing"))
+plotly::ggplotly(pHet_plot, tooltip = c("assigned_sex","percent_missing"))
 ```
 
 ### Crossover Counts
 
-```{r analyzing crossovers}
-xo_counts <- data.frame(rowSums(nxo)) %>%
-  dplyr::rename(nxos = `rowSums.nxo.`) %>%
-  dplyr::mutate(sample = rownames(.)) %>%
-  dplyr::left_join(., ave_int %>%
-                     dplyr::select(sample, gen, predicted_sex, percent_missing_ind_cross)) %>%
-  dplyr::mutate(percent_missing = paste0(round(percent_missing_ind_cross,2),"%"))
+```{r counting crossovers}
+# count crossovers for DO ESC samples
+GM_xos <- qtl2::count_xo(m, quiet = F, cores = parallel::detectCores()/2)
 
-normal_count_plot <- ggplot(xo_counts) + 
-  theme_bw() + 
-  geom_jitter(mapping = aes(x = gen,
-                            y = nxos,
-                            label = sample,
-                            label2 = percent_missing,
-                            fill = predicted_sex), width = 0.1, height = 0, shape = 21, size = 2) +
-  scale_fill_manual(values = pal) +
-  theme(panel.grid.minor = element_blank()) + 
-  labs(x = "Generation",
-       y = "Number of crossovers")
+# make into summarized data frame
+if("XO" %in% sex_check_df$provided_sex){
   
-
-if(working_cross$crosstype == "do"){
-  xo_counts$expected_xos <- unlist(lapply(as.numeric(xo_counts$gen), function(x){
-    expected = 300 + 24 * (x - 7)
-    return(expected)
-  }))
+  # user specified sex chromosome ploidy as the sex, we can use this information
   
-  oe_xo_count_plot <- ggplot(xo_counts) + 
-    theme_bw() + 
-    geom_jitter(mapping = aes(x = gen,
-                            y = nxos-expected_xos,
-                            label = sample,
-                            label2 = percent_missing,
-                            fill = predicted_sex), width = 0.2, shape = 21, size = 2) + 
-    scale_fill_manual(values = pal) +
-    theme(panel.grid.minor = element_blank()) + 
-    labs(x = "Generation",
-         y = "Observed crossovers - Expected crossovers")
-}
-
-ggplot(xo_counts) +
-  theme_bw() +
-  geom_histogram(mapping = aes(x = nxos-expected_xos))
-
-# crossover count plot
-plotly::ggplotly(normal_count_plot, tooltip = c("sample","percent_missing"))
-
-# if possible plot the observed - expected plot
-if(exists(x = "oe_xo_count_plot")){
-  plotly::ggplotly(oe_xo_count_plot, tooltip = c("sample","percent_missing"))  
+  message("User specified aneuploid individuals in original metadata file; displaying those assignments")
+  GM_total_xos <- data.frame(GM_xos, check.names = F) %>%
+    dplyr::mutate(sample = rownames(.)) %>%
+    tidyr::pivot_longer(-sample, names_to = "chr", values_to = "xos") %>%
+    dplyr::left_join(., sex_check_df) %>%
+    dplyr::mutate(auto = dplyr::if_else(chr == "X", "X", "Autosome"),
+                  gen = as.numeric(gen)) %>%
+    dplyr::group_by(sample, predicted_sex, sex, assigned_sex, provided_sex, gen, auto) %>%
+    dplyr::summarise(total_xos = sum(xos))
+  
+} else {
+  
+  GM_total_xos <- data.frame(GM_xos, check.names = F) %>%
+    dplyr::mutate(sample = rownames(.)) %>%
+    tidyr::pivot_longer(-sample, names_to = "chr", values_to = "xos") %>%
+    dplyr::left_join(., sex_check_df) %>%
+    dplyr::mutate(auto = dplyr::if_else(chr == "X", "X", "Autosome"),
+                  gen = as.numeric(gen)) %>%
+    dplyr::group_by(sample, predicted_sex, sex, assigned_sex, gen, auto) %>%
+    dplyr::summarise(total_xos = sum(xos))
 }
 
 ```
 
+We can identify additional support for genotype quality using the crossover counts on the autosomes and X chromosome separately
+
+#### Autosomes
+
+```{r plotting autosomal crossovers}
+
+if("XO" %in% GM_total_xos$provided_sex){
+  # autosomes
+  auto_xo_plot <- ggplot(GM_total_xos %>%
+               dplyr::filter(auto == "Autosome")) + 
+    theme_bw() + 
+    geom_point(mapping = aes(x = gen,
+                           y = total_xos,
+                           fill = predicted_sex,
+                           label = provided_sex),
+             size = 2,
+             position = position_jitter(width = 0.05)) +
+    scale_fill_manual(values = pal, name = "Predicted Sex") +
+    scale_colour_manual(values = pal, name = "Predicted Sex") +
+    geom_smooth(mapping = aes(x = gen, 
+                              y = total_xos, 
+                              colour = predicted_sex), 
+              method = "lm", se = F) +
+    labs(y = "Total crossovers per sample",
+         x = "DO Generation")
+  plotly::ggplotly(auto_xo_plot, tooltip = c("provided_sex"))
+  
+  
+} else {
+  
+  # autosomes
+  auto_xo_plot <- ggplot(GM_total_xos %>%
+               dplyr::filter(auto == "Autosome")) + 
+    theme_bw() + 
+    geom_point(mapping = aes(x = gen,
+                           y = total_xos,
+                           fill = predicted_sex,
+                           label = assigned_sex),
+             size = 2,
+             position = position_jitter(width = 0.05)) +
+    scale_fill_manual(values = pal, name = "Predicted Sex") +
+    scale_colour_manual(values = pal, name = "Predicted Sex") +
+    geom_smooth(mapping = aes(x = gen, 
+                              y = total_xos, 
+                              colour = predicted_sex), 
+              method = "lm", se = F) +
+    labs(y = "Total crossovers per sample",
+         x = "DO Generation")
+  plotly::ggplotly(auto_xo_plot, tooltip = c("assigned_sex"))
+
+}
+
+```
+
+#### Chromosome X
+
+```{r plotting chr X crossovers}
+if("XO" %in% GM_total_xos$provided_sex){
+  
+  # sex chromosomes
+  sexchr_xo_plot <- ggplot(GM_total_xos %>%
+               dplyr::filter(auto == "X")) + 
+    theme_bw() + 
+    geom_point(mapping = aes(x = gen,
+                           y = total_xos,
+                           fill = predicted_sex,
+                           label = provided_sex),
+             size = 2,
+             position = position_jitter(width = 0.05)) +
+    scale_fill_manual(values = pal, name = "Predicted Sex") +
+    scale_colour_manual(values = pal, name = "Predicted Sex") +
+    geom_smooth(mapping = aes(x = gen, 
+                              y = total_xos, 
+                              colour = predicted_sex), 
+              method = "lm", se = F) +
+    labs(y = "Total crossovers per sample",
+         x = "DO Generation")
+  plotly::ggplotly(sexchr_xo_plot, tooltip = c("provided_sex"))
+} else {
+  
+  # sex chromosomes
+  sexchr_xo_plot <- ggplot(GM_total_xos %>%
+               dplyr::filter(auto == "X")) + 
+    theme_bw() + 
+    geom_point(mapping = aes(x = gen,
+                           y = total_xos,
+                           fill = predicted_sex,
+                           label = assigned_sex),
+             size = 2,
+             position = position_jitter(width = 0.05)) +
+    scale_fill_manual(values = pal, name = "Predicted Sex") +
+    scale_colour_manual(values = pal, name = "Predicted Sex") +
+    geom_smooth(mapping = aes(x = gen, 
+                              y = total_xos, 
+                              colour = predicted_sex), 
+              method = "lm", se = F) +
+    labs(y = "Total crossovers per sample",
+         x = "DO Generation")
+  
+  plotly::ggplotly(sexchr_xo_plot, tooltip = c("assigned_sex"))
+}
+```
+
 ### Sample Status Update
 
-Parsing the proportion of missing genotypes, predicted and recorded sexes, coat colors, and sample duplication, the following samples have been flagged for follow-up:
+Parsing the proportion of missing genotypes, predicted and recorded sexes, and sample duplication, the following samples have been flagged for follow-up:
 
 ```{r sample status update}
 # pull samples with duplicates
@@ -310,9 +393,10 @@ if(exists("FLAG_dup_df")){
 if(!is.null(sample_dups)){
  FLAG_dup_df <- data.frame(sample_dups, "sample duplicate") %>%
   `colnames<-`(c("sample","flag_reason"))
+} else {
+FLAG_dup_df <- data.frame(NA, "sample duplicate") %>%
+  `colnames<-`(c("sample","flag_reason"))
 }
-FLAG_dup_df <- FLAG_dup_df[!duplicated(FLAG_dup_df),]
-
 
 # pull samples with many missing genotypes
 FLAG_pct_miss <- data.frame(percent_missing_ind_cross[percent_missing_ind_cross > 5]) %>%
@@ -324,15 +408,35 @@ rownames(FLAG_pct_miss) <- NULL
 FLAG_pct_miss$flag_reason <- "missing genotypes"
 
 # pull mismatched assigned and predicted sex
-FLAG_sex_mismatch_df <- ave_int %>%
-  dplyr::filter(sex != predicted_sex) %>%
-  dplyr::mutate(notes = paste0("predicted sex: ",predicted_sex,"; recorded sex: ", sex),
+if("XO" %in% GM_total_xos$provided_sex){
+  FLAG_sex_mismatch_df <- GM_total_xos %>%
+    dplyr::ungroup() %>%
+    dplyr::distinct(sample, provided_sex, predicted_sex) %>%
+    dplyr::mutate(predicted_sex2 = case_when(predicted_sex == "M" ~ "XY",
+                                             predicted_sex == "F" ~ "XX")) %>%
+    dplyr::filter(provided_sex != predicted_sex2) %>%
+    dplyr::mutate(notes = paste0("predicted sex: ",predicted_sex,"; recorded sex: ", provided_sex),
                 flag_reason = "sex mismatch") %>%
-  dplyr::select(sample, notes, flag_reason)
-rownames(FLAG_sex_mismatch_df) <- NULL
+    dplyr::select(sample, notes, flag_reason)
+  rownames(FLAG_sex_mismatch_df) <- NULL
+} else {
+  FLAG_sex_mismatch_df <- GM_total_xos %>%
+    dplyr::ungroup() %>%
+    dplyr::distinct(sample, sex, predicted_sex) %>%
+    dplyr::mutate(sex = stringr::str_to_upper(sex)) %>%
+    dplyr::filter(sex != predicted_sex) %>%
+    dplyr::mutate(notes = paste0("predicted sex: ",predicted_sex,"; recorded sex: ", sex),
+                  flag_reason = "sex mismatch") %>%
+    dplyr::select(sample, notes, flag_reason)
+  rownames(FLAG_sex_mismatch_df) <- NULL
+}
 
 # pull samples with wild crossover counts
-FLAG_xo <- xo_counts %>%
+FLAG_xo <- GM_total_xos %>%
+  dplyr::ungroup() %>%
+  dplyr::distinct(sample, auto, total_xos) %>%
+  tidyr::pivot_wider(names_from = auto, values_from = total_xos) %>%
+  dplyr::mutate(nxos = Autosome+X) %>%
   dplyr::select(sample, nxos) %>%
   dplyr::filter(nxos > 2000 | nxos < 500) %>%
   dplyr::mutate(notes = paste0(nxos, " crossovers; flagged as too low or high"),
@@ -344,6 +448,7 @@ flag_report <- lapply(ls(pattern = "FLAG"), function(x) get(x)) %>%
   Reduce(dplyr::bind_rows,.) %>%
   dplyr::select(sample, flag_reason, notes) %>%
   dplyr::arrange(sample) %>%
+  dplyr::filter(!is.na(sample)) %>%
   dplyr::mutate(notes = dplyr::if_else(flag_reason == "sample duplicate",
                                        true = "T", false = notes))
 rownames(flag_report) <- NULL
@@ -360,5 +465,6 @@ DT::datatable(data = wide_flag_report,
               rownames = FALSE)
 
 # write flagged samples
-write.csv(flag_report, quote = F, row.names = F, file = "sample_QC_result.csv")
+write.csv(flag_report, quote = F, row.names = F, file = "sample_QC.csv")
+saveRDS(bad_markers, file = "bad_markers.rds")
 ```

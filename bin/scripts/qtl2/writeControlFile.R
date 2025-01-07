@@ -28,8 +28,8 @@ print(getwd())
 
 # read in covariate file and make sex codes uniform
 covar <- read.csv(covar_file, stringsAsFactors = F)
-covar$sex[covar$sex == "female" | covar$sex == "f" | covar$sex == "FALSE" | covar$sex == FALSE] <- "F"
-covar$sex[covar$sex == "male" | covar$sex == "m"] <- "M"
+covar$sex[covar$sex == "female" | covar$sex == "f" | covar$sex == "FALSE" | covar$sex == FALSE | covar$sex == "XX" | covar$sex == "XO"] <- "F"
+covar$sex[covar$sex == "male" | covar$sex == "m" | covar$sex == "XY" | covar$sex == "XXY"] <- "M"
 
 # write out new covar file
 covar <- covar %>%
