@@ -52,3 +52,66 @@ The run script `run_HR_QC.sh` specifies only one user--generated comma-separated
 The pipeline reads in the raw genotypes from GigaMUGA FinalReport files and makes them into files amenable to analysis using R/qtl2. These include cross files, genotype probabilities, allele probabilities, imputed genotypes from probabilities (`maxmarg` output).
 
 Files used for sample and genotype quality control are also generated, such as inferred genotyping errors, poorly performing markers, and a markdown document outlining results from sex checks and calculations of sample duplication.
+
+```mermaid
+%%{
+  init: {
+    'theme': 'base',
+    'themeVariables': {
+      'primaryColor': '#7C875A',
+      'primaryTextColor': '#000000',
+      'primaryBorderColor': '#fff',
+      'lineColor': '#fff',
+      'secondaryColor': '#fff',
+      'tertiaryColor': '#fff'
+    }
+  }
+}%%
+
+flowchart TD
+    p0((FinalReport.zip))
+    p1((R/qtl2 Covar File))
+    p2((GigaMUGA Reference Files))
+    p3[GS_TO_QTL2]
+    p4[WRITE_CROSS]
+    p5[GENOPROBS]
+    p6[CONCAT_GENOPROBS]
+    p7[CONCAT_INTENSITIES]
+    o1((Sex Chromosome Marker Intensities))
+    o2((All Marker Intensities))
+    o3((Excluded File List))
+    o4((36-state/Genotype Probabilities))
+    o5((8-state/Allele Probabilities))
+    o6((Cross Object))
+    o7((Imputed Genotype States))
+    o8((Genotyping Error LOD Scores))
+    o9((Sample Quality Control Flag Summary))
+    o10((Bad Markers List))
+    o11((Sample Quality Control Summary Markdown))
+
+    p0 --> p3
+    p1 --> p3
+
+    p3 --> p4
+    p3 --> p7
+    p3 --> o1
+    p3 --> o2
+
+    p2 --> p4
+    p4 --> p5
+    p5 --> p6
+
+    p6 --> o3
+    p6 --> o4
+    p6 --> o5
+    p6 --> o6
+    p6 --> o7
+    p6 --> o8
+
+    p7 --> o9
+    p7 --> o10
+    p7 --> o11
+
+classDef output stroke-width:5px
+classDef process stroke-width:5px
+```
