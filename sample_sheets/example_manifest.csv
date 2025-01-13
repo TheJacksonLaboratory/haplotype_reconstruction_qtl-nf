@@ -1,0 +1,10 @@
+finalreport_file,project_id,covar_file,cross_type
+/path/to/finalreport1.zip,project1,/path/to/covar_file.csv,do
+/path/to/finalreport2.zip,project1,/path/to/covar_file.csv,do
+/path/to/finalreport3.zip,project1,/path/to/covar_file.csv,do
+/path/to/finalreport4.zip,project2,/path/to/covar_file.csv,do
+/path/to/finalreport5.zip,project2,/path/to/covar_file.csv,do
+/path/to/finalreport6.zip,project2,/path/to/covar_file.csv,do
+/path/to/finalreport7.zip,project3,/path/to/covar_file.csv,do
+/path/to/finalreport8.zip,project3,/path/to/covar_file.csv,do
+/path/to/finalreport9.zip,project3,/path/to/covar_file.csv,do
