@@ -12,7 +12,7 @@ library(parallel)
 ################################################################################ 
 
 # # testing
-# test_dir <- "/flashscratch/widmas/HR_QC_outputDir/work/a8/b534c13c57cef356e89bc79a917a9a"
+# test_dir <- "/flashscratch/widmas/HR_QC_outputDir/work/88/c6ee71e4f7c91e94491e64f99873b8"
 # setwd(test_dir)
 
 # get genoprobs objects
@@ -53,6 +53,7 @@ cross <- cross_list[[1]]
 cross$covar <- new_covar
 cross$cross_info <- new_crossinfo
 cross$is_female <- new_isfemales
+cross$geno <- new_geno
 
 # get genoprobs objects
 probs_file_list <- c(t(read.table("probs.txt")))
@@ -71,7 +72,20 @@ alleleprobs <- qtl2::genoprob_to_alleleprob(probs = genoprobs,
                                             cores = parallel::detectCores(), 
                                             quiet = F)
 
+# calculate viterbi
+m <- qtl2::maxmarg(probs = genoprobs, minprob=0.5, map = cross$pmap, quiet = T)
+
+# calculate genotyping errors
+e <- calc_errorlod(cross, genoprobs, cores = parallel::detectCores())
+
+# excluded samples for QC
+excluded_samples_list <- list.files(pattern = "excluded_samples")
+excluded_samples <- Reduce(rbind,lapply(excluded_samples_list, read.csv))
+
 # save
 saveRDS(cross, file = "cross.rds")
 saveRDS(genoprobs, file = "genoprobs.rds", compress = "gzip")
 saveRDS(alleleprobs, file = "alleleprobs.rds", compress = "gzip")
+saveRDS(m, file = "maxmarg.rds", compress = "gzip")
+saveRDS(e, file = "genotyping_errors.rds", compress = "gzip")
+write.csv(excluded_samples, file = "excluded_samples.csv", row.names = F, quote = F)

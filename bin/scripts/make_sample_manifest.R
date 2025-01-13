@@ -5,7 +5,7 @@
 #
 # Sam Widmayer
 # samuel.widmayer@jax.org
-# 20241112
+# 20250107
 ################################################################################
 
 library(tidyverse)
@@ -25,24 +25,26 @@ finalreport_file <- list.files(hr_nf_dir, pattern = "FinalReport", recursive = T
 # project ids
 project_id <- unlist(lapply(finalreport_file, function(x) strsplit(x,"/")[[1]][[9]]))
 
+# filter out CSNA if you want
+finalreport_file <- finalreport_file[!project_id == "CSNA"]
+project_id <- project_id[!project_id == "CSNA"]
+
 # read in CSNA metadata
-CSNA_metadata <- read.csv(file.path(hr_nf_dir, "projects/CSNA/CSNA_metadata.csv"))
-trimmed_CSNA_metadata <- CSNA_metadata %>%
-  dplyr::select(Sample.ID, Sex, DO.Generation, chrM) %>%
+# CSNA_metadata <- read.csv(file.path(hr_nf_dir, "projects/CSNA/CSNA_metadata.csv"))
+# trimmed_CSNA_metadata <- CSNA_metadata %>%
+#   dplyr::select(Sample.ID, Sex, DO.Generation, chrM) %>%
+#   dplyr::rename(id = Sample.ID,
+#                 sex = Sex,
+#                 gen = DO.Generation)
+# write.csv(trimmed_CSNA_metadata, file.path(hr_nf_dir, "projects/CSNA/csna_covar.csv"), quote = F, row.names = F)
+
+# read in Attie metadata
+attie_metadata <- read.csv(file.path(hr_nf_dir, "projects/Attie/Attie_DO_Invivo_metadata.csv"), tryLogical = F)
+trimmed_attie_metadata <- attie_metadata %>%
+  dplyr::select(Sample.ID,Sex,DO.Generation,everything()) %>%
   dplyr::rename(id = Sample.ID,
                 sex = Sex,
                 gen = DO.Generation)
-write.csv(trimmed_CSNA_metadata, file.path(hr_nf_dir, "projects/CSNA/csna_covar.csv"), quote = F, row.names = F)
-
-# read in Attie metadata
-attie_metadata_files <- list.files(file.path(hr_nf_dir,"projects/Attie"), pattern = "inventory", full.names = T)
-attie_metadata <- lapply(attie_metadata_files, function(x) suppressMessages(readr::read_csv(x, trim_ws = T))) %>%
-  Reduce(dplyr::bind_rows,.)
-trimmed_attie_metadata <- attie_metadata %>%
-  dplyr::select(`Unique Sample ID`,Sex,`DO Generation`,`Animal ID`) %>%
-  dplyr::rename(id = `Unique Sample ID`,
-                sex = Sex,
-                gen = `DO Generation`)
 write.csv(trimmed_attie_metadata, file.path(hr_nf_dir, "projects/Attie/covar_files/attie_covar.csv"), quote = F, row.names = F)
 
 # read in Beamer metadata
@@ -61,6 +63,16 @@ wrangled_baker_metadata  <- baker_metadata %>%
                 gen = generation) %>%
   dplyr::select(id, sex, gen, everything())
 write.csv(wrangled_baker_metadata, file.path(hr_nf_dir, "projects/Baker/covar_files/baker_covar.csv"), quote = F, row.names = F)
+
+# read in Bubier metadata
+bubier_metadata <- read.csv(file.path(hr_nf_dir, "projects/Bubier_opioid/Bubier_DO_Opioid_metadata.csv"), tryLogical = F)
+wrangled_bubier_metadata <- bubier_metadata %>%
+  dplyr::select(Sample.ID, Sex, DO.Generation, everything()) %>%
+  dplyr::rename(id = Sample.ID,
+                sex = Sex,
+                gen = DO.Generation)
+write.csv(wrangled_bubier_metadata, file.path(hr_nf_dir, "projects/Bubier_opioid/covar_files/bubier_covar.csv"), quote = F, row.names = F)
+
 # Make total manifest
 
 # covar files

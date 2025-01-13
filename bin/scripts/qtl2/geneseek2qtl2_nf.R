@@ -25,8 +25,8 @@ max_pct_missing = as.numeric(args[4])
 cat(paste0(" -- Maximum missing markers allowed = ",max_pct_missing*100,"%\n"))
 # max_pct_missing = 0.12
 
-# # testing:
-# test_dir <- "/flashscratch/widmas/HR_QC_outputDir/work/50/ea497e5860f244926c938c828740cf"
+# testing:
+# test_dir <- "/flashscratch/widmas/HR_QC_outputDir/work/41/e1f8975565911a9ee7ecb2332086ba"
 # GM_ref_dir    <-    "/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/bin/CC_DO_data"
 # metadata_path <-    list.files(test_dir, pattern = "covar")[1]
 # ifile        <-    list.files(test_dir, pattern = ".zip")
@@ -174,16 +174,13 @@ cat(" -Writing subsetted covar file \n")
 filtered_meta <- metadata %>%
   dplyr::filter(id %in% colnames(geno)) %>%
   dplyr::mutate(provided_sex = sex)
-# catch for XO and XY provided sexes
-filtered_meta$sex[filtered_meta$sex == "XO"] <- "F"
-filtered_meta$sex[filtered_meta$sex == "XXY"] <- "M"
 write.csv(filtered_meta, "covar.csv", quote = F, row.names = F)
 
 if(is.null(excluded_samples)){
   ex_s <- data.frame(ifile, NA)
   colnames(ex_s) <- c("FinalReport","excluded_samples")
 } else {
-  ex_s <- data.frame(ifile, excluded_samples)
+  ex_s <- data.frame(ifile, names(excluded_samples))
   colnames(ex_s) <- c("FinalReport","excluded_samples")
 }
 write.csv(ex_s, "excluded_samples.csv", quote = F, row.names = F)

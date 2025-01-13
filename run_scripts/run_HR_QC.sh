@@ -18,9 +18,8 @@ module load nextflow/23.10.1
 # RUN PIPELINE
 nextflow main.nf \
         --workflow SampleQC_Haplotype_Reconstruction \
-        --manifest 'sample_sheets/20250102_hr-nf_manifest.csv' \
+        --manifest 'sample_sheets/20250107_hr-nf_manifest.csv' \
         -w '/flashscratch/widmas/HR_QC_outputDir/work' \
         --comment "This script will perform sample QC and haplotype reconstruction on genetically diverse mouse samples" \
-        -with-dag HR_QC_flow.html \
-        -resume
+        -with-dag HR_QC_flow.html
 

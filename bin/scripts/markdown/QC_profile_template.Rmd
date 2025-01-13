@@ -24,7 +24,9 @@ library(fst)
 
 # project directory
 knitr::opts_knit$set(root.dir = getwd())
+# knitr::opts_knit$set(root.dir = "/flashscratch/widmas/HR_QC_outputDir/work/95/466eb43ab299946e7f2518a5dcce37")
 knitr::opts_chunk$set(echo = TRUE, dev = "png")
+
 options(scipen = 999999)
 ```
 
@@ -32,22 +34,22 @@ options(scipen = 999999)
 
 ```{r load data}
 # cross object
-cross <- readRDS(list.files(pattern = "cross.rds", recursive = T, full.names = T))
+cross <- readRDS(list.files(pattern = "cross.rds"))
 
 # x chromosome intensities
-xint <- read.csv(list.files(pattern = "chrX_intensities.csv", recursive = T, full.names = T))
+xint <- read.csv(list.files(pattern = "chrX_intensities.csv"), check.names = F)
 
 # y chromosome intensities
-yint <- read.csv(list.files(pattern = "chrY_intensities.csv", recursive = T, full.names = T))
+yint <- read.csv(list.files(pattern = "chrY_intensities.csv"), check.names = F)
 
 # intensities
-int <- fst::read.fst(list.files(pattern = "all_intensities.fst", recursive = T, full.names = T))
+int <- fst::read.fst(list.files(pattern = "all_intensities.fst"))
 
 # viterbi
-m <- readRDS(list.files(pattern = "maxmarg.rds", recursive = T, full.names = T))
+m <- readRDS(list.files(pattern = "maxmarg.rds"))
 
 # genoprob errors
-e <- readRDS(list.files(pattern = "genotyping_errors.rds", recursive = T, full.names = T))
+e <- readRDS(list.files(pattern = "genotyping_errors.rds"))
 ```
 
 ## Project Metrics
@@ -95,12 +97,12 @@ qtlcharts::iplot(x = seq_along(percent_missing_ind_cross),
                                 ylab="Percent missing genotype data",
                                 ylim=c(0, 100))) %>% suppressMessages()
 
-# view intensities
-int <- int[int$snp %in% qtl2::marker_names(cross),]
-int <- int[seq(1, nrow(int), by=2),-(1:2)] + int[-seq(1, nrow(int), by=2),-(1:2)]
-int <- int[,which(colnames(int) %in% qtl2::ind_ids(cross))]
-n <- names(sort(percent_missing_ind_cross, decreasing=TRUE))
-iboxplot(log10(t(int[,n])+1), orderByMedian=FALSE, chartOpts=list(ylab="log10(SNP intensity + 1)"))
+# # view intensities
+# int <- int[int$snp %in% qtl2::marker_names(cross),]
+# int <- int[seq(1, nrow(int), by=2),-(1:2)] + int[-seq(1, nrow(int), by=2),-(1:2)]
+# int <- int[,which(colnames(int) %in% qtl2::ind_ids(cross))]
+# n <- names(sort(percent_missing_ind_cross, decreasing=TRUE))
+# iboxplot(log10(t(int[,n])+1), orderByMedian=FALSE, chartOpts=list(ylab="log10(SNP intensity + 1)"))
 ```
 
 There were:
@@ -143,6 +145,18 @@ rug(cg[upper.tri(cg)])
 ### Sex Checks
 
 ```{r calculating average sex chr intensities}
+# see if there are any samples where a bunch of sex chromosome intensities are missing and remove them?
+sex_chr_flag <- list()
+for(s in 1:ncol(xint)){
+  sex_chr_flag[[s]] <- length(which(is.na(xint[,s])))
+}
+sex_chr_flag <- colnames(xint[,unlist(sex_chr_flag) > (nrow(xint)*0.85)])
+if(length(sex_chr_flag) > 0){
+  sex_chr_flag_samples <- sex_chr_flag
+  xint <- xint[,!colnames(xint) %in% sex_chr_flag_samples]
+  yint <- yint[,!colnames(yint) %in% sex_chr_flag_samples]
+}
+
 # average the good X markers
 filtered_xint <- xint %>%
   dplyr::filter(!marker %in% names(which(percent_missing_marker > 5)))
@@ -164,7 +178,7 @@ ave_int <- dplyr::left_join(xint_ave, yint_ave) %>%
   dplyr::select(sample, everything())
 sex_int_covar <- data.frame(cross$covar) %>% 
   dplyr::mutate(sample = rownames(.)) %>%
-  dplyr::left_join(., ave_int) %>%
+  dplyr::left_join(ave_int,.) %>%
   dplyr::select(sample, ave_x, ave_y, sex, everything())
 
 # categorize samples into predicted sex chromosome genotypes using intensities
@@ -248,9 +262,10 @@ if("XO" %in% sex_check_df$provided_sex){
   
   message("User specified aneuploid individuals in original metadata file; displaying those assignments")
   GM_total_xos <- data.frame(GM_xos, check.names = F) %>%
-    dplyr::mutate(sample = rownames(.)) %>%
+    dplyr::mutate(sample = rownames(.),
+                  sample = gsub("X","",sample)) %>%
     tidyr::pivot_longer(-sample, names_to = "chr", values_to = "xos") %>%
-    dplyr::left_join(., sex_check_df) %>%
+    dplyr::left_join(sex_check_df,.) %>%
     dplyr::mutate(auto = dplyr::if_else(chr == "X", "X", "Autosome"),
                   gen = as.numeric(gen)) %>%
     dplyr::group_by(sample, predicted_sex, sex, assigned_sex, provided_sex, gen, auto) %>%
@@ -259,9 +274,10 @@ if("XO" %in% sex_check_df$provided_sex){
 } else {
   
   GM_total_xos <- data.frame(GM_xos, check.names = F) %>%
-    dplyr::mutate(sample = rownames(.)) %>%
+    dplyr::mutate(sample = rownames(.),
+                  sample = gsub("X","",sample)) %>%
     tidyr::pivot_longer(-sample, names_to = "chr", values_to = "xos") %>%
-    dplyr::left_join(., sex_check_df) %>%
+    dplyr::left_join(sex_check_df,.) %>%
     dplyr::mutate(auto = dplyr::if_else(chr == "X", "X", "Autosome"),
                   gen = as.numeric(gen)) %>%
     dplyr::group_by(sample, predicted_sex, sex, assigned_sex, gen, auto) %>%
@@ -387,6 +403,7 @@ flagged_pairs <- apply(cg, 2, function(x){
 sample_dups <- lapply(names(unlist(flagged_pairs)), function(x){
   strsplit(x, "[.]")[[1]]
   }) %>% unlist()
+
 if(exists("FLAG_dup_df")){
   rm(FLAG_dup_df)
 }
@@ -406,6 +423,13 @@ FLAG_pct_miss <- data.frame(percent_missing_ind_cross[percent_missing_ind_cross 
                 notes = paste0(notes,"% of markers missing genotypes"))
 rownames(FLAG_pct_miss) <- NULL
 FLAG_pct_miss$flag_reason <- "missing genotypes"
+
+if(exists("sex_chr_flag_samples")){
+  FLAG_sex_chr_int <- data.frame(sex_chr_flag_samples, "sex chromosome intensities missing") %>%
+  `colnames<-`(c("sample","flag_reason"))
+}
+
+
 
 # pull mismatched assigned and predicted sex
 if("XO" %in% GM_total_xos$provided_sex){
@@ -438,7 +462,7 @@ FLAG_xo <- GM_total_xos %>%
   tidyr::pivot_wider(names_from = auto, values_from = total_xos) %>%
   dplyr::mutate(nxos = Autosome+X) %>%
   dplyr::select(sample, nxos) %>%
-  dplyr::filter(nxos > 2000 | nxos < 500) %>%
+  dplyr::filter(nxos > 2000 | nxos < 200) %>%
   dplyr::mutate(notes = paste0(nxos, " crossovers; flagged as too low or high"),
                 flag_reason = "crossover counts") %>%
   dplyr::select(-nxos)
@@ -449,7 +473,8 @@ flag_report <- lapply(ls(pattern = "FLAG"), function(x) get(x)) %>%
   dplyr::select(sample, flag_reason, notes) %>%
   dplyr::arrange(sample) %>%
   dplyr::filter(!is.na(sample)) %>%
-  dplyr::mutate(notes = dplyr::if_else(flag_reason == "sample duplicate",
+  dplyr::distinct(sample, flag_reason, notes) %>%
+  dplyr::mutate(notes = dplyr::if_else(flag_reason %in% c("sample duplicate","sex chromosome intensities missing"),
                                        true = "T", false = notes))
 rownames(flag_report) <- NULL
 
