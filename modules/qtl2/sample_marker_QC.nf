@@ -8,9 +8,6 @@ process SAMPLE_MARKER_QC {
 
   container 'docker://sjwidmay/lcgbs_hr:latest'
 
-  //publishDir "${projectDir}/results/${project_id}/QC", pattern: "*.RData", mode:'copy'
-  //publishDir "${projectDir}/results/${project_id}/logs", pattern: "*.log.txt", mode:'copy'
-
   input:
   tuple val(project_id), path(crosses), file(excluded_samples), file(intensities)
 
