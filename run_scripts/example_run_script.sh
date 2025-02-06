@@ -19,6 +19,7 @@ module load nextflow/23.10.1
 nextflow main.nf \
         --workflow SampleQC_Haplotype_Reconstruction \
         --manifest 'sample_sheets/example_manifest.csv' \
+        --pubdir {PATH/TO/OUTPUT/DIRECTORY} \
 	-w '/flashscratch/${USER}/HR_QC_outputDir/work' \
         --comment "This script will perform sample QC and haplotype reconstruction on genetically diverse mouse samples" \
         -with-dag HR_QC_flow.html

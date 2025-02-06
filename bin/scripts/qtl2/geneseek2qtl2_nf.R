@@ -11,8 +11,8 @@ args <- commandArgs(trailingOnly = TRUE)
 cat(paste0(" -- R/qtl2 version: ",qtl2::qtl2version(),"\n"))
 cat(paste0(" -- R/qtl2convert version: ",packageVersion("qtl2convert"),"\n"))
 
-# GigaMUGA reference data directory
-GM_ref_dir <- args[1]
+# allele codes
+codefile <- args[1]
 
 # metadata file indicating which mice should be retained from array files
 metadata_path <- args[2]
@@ -32,8 +32,7 @@ cat(paste0(" -- Maximum missing markers allowed = ",max_pct_missing*100,"%\n"))
 # ifile        <-    list.files(test_dir, pattern = ".zip")
 # setwd(test_dir)
 
-# allele codes
-codefile <- file.path(GM_ref_dir,"GM_allelecodes.csv")
+
 
 cat("Reading covar file")
 metadata <- read.csv(metadata_path, tryLogical = F)
