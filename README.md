@@ -9,7 +9,7 @@ This pipeline is implemented using [Nextflow](https://www.nextflow.io/), a scala
 Clone the repository using the standard procedure. On the JAX HPC, from within the cloned `haplotype_reconstruction_qtl-nf` directory:
 
 ``` bash
-sbatch run_scripts/run_HR_QC.sh
+sbatch run_scripts/example_run_script.sh
 ```
 
 ## Overview:
@@ -67,4 +67,4 @@ classDef output fill:#99e4ff,stroke:#000000,stroke-width:5px,color:#000000
 classDef process fill:#00A2DC,stroke:#000000,stroke-width:2px,color:#000000
 ```
 
-The run script `run_HR_QC.sh` specifies only one user--generated comma-separated sample manifest with four named columns: **finalreport_file**, **project_id**, **covar_file**, and **cross_type** (see README within `sample_sheets` subdirectory).
+The run script `example_run_script.sh` specifies only one user--generated comma-separated sample manifest with four named columns: **finalreport_file**, **project_id**, **covar_file**, and **cross_type** (see README within `sample_sheets` subdirectory).
