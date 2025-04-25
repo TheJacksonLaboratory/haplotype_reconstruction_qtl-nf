@@ -23,11 +23,16 @@ flowchart TD
     p0((FinalReport.zip))
     p1((R/qtl2 Covar File))
     p2((GigaMUGA Reference Files))
-    p3[GS_TO_QTL2]:::process
-    p4[WRITE_CROSS]:::process
-    p5[GENOPROBS]:::process
-    p6[CONCAT_GENOPROBS]:::process
-    p7[CONCAT_INTENSITIES]:::process
+    p3((Phenotype Table))
+    p4[GS_TO_QTL2]:::process
+    p5[WRITE_CROSS]:::process
+    p6[GENOPROBS]:::process
+    p7[CONCAT_GENOPROBS]:::process
+    p8[CONCAT_INTENSITIES]:::process
+    p9[PHENOTYPE_QC]:::process
+    p10[PERFORM_PERMUTATIONS]:::process
+    p11[MAP_QTL]:::process
+    p12[PROCESS_QTL]:::process
     o1((Sex Chromosome Marker Intensities)):::output
     o2((All Marker Intensities)):::output
     o3((Excluded File List)):::output
@@ -39,29 +44,59 @@ flowchart TD
     o9((Sample Quality Control Flag Summary)):::output
     o10((Bad Markers List)):::output
     o11((Sample Quality Control Summary Markdown)):::output
+    o12((Phenotype Quality Control Summary Markdown)):::output
+    o13((Processed Phenotypes)):::output
+    o14((Kinship Matrix)):::output
+    o15((Permutation Threshold Summary)):::output
+    o16((QTL Table)):::output
+    o17((scan1 Output)):::output
+    o18((scan1blup Output)):::output
+    o19((QTL LOD Plots)):::output
+    o20((QTL Effect Plots)):::output
+    o21((Cross Object)):::output
 
-    p0 --> p3
-    p1 --> p3
+    p0 --> p4
+    p1 --> p4
 
-    p3 --> p4
-    p3 --> p7
-    p3 --> o1
-    p3 --> o2
+    p4 --> p5
+    p4 --> p8
+    p4 --> o1
+    p4 --> o2
 
     p2 --> p4
-    p4 --> p5
-    p5 --> p6
+    p4 --> p6
+    p5 --> o21
+    p6 --> p7
 
-    p6 --> o3
-    p6 --> o4
-    p6 --> o5
-    p6 --> o6
-    p6 --> o7
-    p6 --> o8
+    p7 --> o3
+    p7 --> o4
+    p7 --> o5
+    p7 --> o6
+    p7 --> o7
+    p7 --> o8
 
-    p7 --> o9
-    p7 --> o10
-    p7 --> o11
+    p8 --> o9
+    p8 --> o10
+    p8 --> o11
+
+    p3 --> p9
+    p9 --> o12
+    p9 --> o13
+    p9 --> p10
+
+    p5 --> p10
+    p7 --> p10
+    p10 --> o14
+    p10 --> o15
+    p10 --> p11
+
+    p11 --> o16
+    p11 --> o17
+    p11 --> o19
+    p11 --> p12
+
+    p12 --> o18
+    p12 --> o20
 
 classDef output fill:#99e4ff,stroke:#000000,stroke-width:5px,color:#000000
 classDef process fill:#00A2DC,stroke:#000000,stroke-width:2px,color:#000000
