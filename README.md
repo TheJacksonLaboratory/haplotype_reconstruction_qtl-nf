@@ -50,53 +50,52 @@ flowchart TD
     o15((Permutation Threshold Summary)):::output
     o16((QTL Table)):::output
     o17((scan1 Output)):::output
-    o18((scan1blup Output)):::output
     o19((QTL LOD Plots)):::output
-    o20((QTL Effect Plots)):::output
-    o21((Cross Object)):::output
 
     p0 --> p4
-    p1 --> p4
 
+    p1 --> p4
+    p2 --> p4
+    p3 --> p9
     p4 --> p5
     p4 --> p8
+    p4 --> p6
     p4 --> o1
     p4 --> o2
 
-    p2 --> p4
-    p4 --> p6
-    p5 --> o21
-    p6 --> p7
+    p5 --> p6
+    p5 --> p10
+    p5 --> o6
+    
 
+    p6 --> p7
+    
+    p7 --> p10
+    p7 --> p11
     p7 --> o3
     p7 --> o4
     p7 --> o5
-    p7 --> o6
     p7 --> o7
     p7 --> o8
+    p7 --> o14
 
     p8 --> o9
     p8 --> o10
     p8 --> o11
-
-    p3 --> p9
+    
+    p9 --> p10
+    p9 --> p11
     p9 --> o12
     p9 --> o13
-    p9 --> p10
 
-    p5 --> p10
-    p7 --> p10
-    p10 --> o14
+    p10 --> p12
     p10 --> o15
-    p10 --> p11
 
-    p11 --> o16
+    p11 --> p12
     p11 --> o17
     p11 --> o19
-    p11 --> p12
-
-    p12 --> o18
-    p12 --> o20
+    
+    p12 --> o16
 
 classDef output fill:#99e4ff,stroke:#000000,stroke-width:5px,color:#000000
 classDef process fill:#00A2DC,stroke:#000000,stroke-width:2px,color:#000000
