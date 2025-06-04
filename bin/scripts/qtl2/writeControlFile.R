@@ -8,20 +8,15 @@ library(dplyr)
 #
 # Sam Widmayer
 # samuel.widmayer@jax.org
-# 20241113
+# 20250521
 ################################################################################ 
-# test_dir = "/flashscratch/widmas/HR_QC_outputDir/work/68/ef184fcd68dea2c5105c991d019c15"
+
+# testing
+# test_dir = "/flashscratch/widmas/HR_QC_outputDir/work/1c/5ccd8e7e35c32b08e88e6f5a4a1fb4/"
 # setwd(test_dir)
-args <- commandArgs(trailingOnly = TRUE)
 
 # covar file
-covar_file <- "covar.csv"
-
-# make the control file in the output directory?
-# sample_geno_ostem <- args[1]
-
-# cat(" --Genotype file output directory:")
-# print(sample_geno_ostem)
+covar_file <- list.files(pattern = "covar.csv")
 
 cat(" --Current working directory:")
 print(getwd())
@@ -33,7 +28,8 @@ covar$sex[covar$sex == "male" | covar$sex == "m" | covar$sex == "XY" | covar$sex
 
 # write out new covar file
 covar <- covar %>%
-  dplyr::select(id, sex, gen, everything())
+  dplyr::select(id, sex, gen, everything()) %>%
+  dplyr::distinct(id, sex, gen)
 write.csv(x = covar, file = "sex_corrected_covar.csv", row.names = F, quote = F)
 
 # move elements to one directory for reference and for proper cross paths
@@ -105,5 +101,15 @@ if(length(unique(covar$sex)) > 1){
 cat(" -Reading control file\n")
 # read cross
 cross <- qtl2::read_cross2(file = file.path(ostem,"QC_HAP.json"), quiet = F)
+
+# sample hash to link to intensity input
+int_dedup_file <- "dedup_samples.csv"
+hash <- strsplit(covar_file,"_")[[1]][[1]]
+dedup_samples <- read.csv(int_dedup_file)
+dedup_samples <- dedup_samples$sample[which(dedup_samples$hash == hash)]
+
+# subset cross to individuals from the correct neogen file if sample was genotyped multiple times
+cross <- subset(cross, ind = dedup_samples)
+
 saveRDS(cross, file = "preQC_cross.rds")
 

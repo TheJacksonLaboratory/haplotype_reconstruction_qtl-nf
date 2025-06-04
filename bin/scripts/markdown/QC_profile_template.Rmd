@@ -48,6 +48,9 @@ int <- fst::read.fst(list.files(pattern = "all_intensities.fst"))
 # viterbi
 m <- readRDS(list.files(pattern = "maxmarg.rds"))
 
+# viterbi
+bad_markers <- readRDS(list.files(pattern = "bad_markers.rds"))
+
 # genoprob errors
 e <- readRDS(list.files(pattern = "genotyping_errors.rds"))
 ```
@@ -69,10 +72,6 @@ hist(percent_missing_marker, breaks = 100,
      main = "Distribution of the proportion of samples missing each marker", 
      xlab = "Percent of samples missing genotype",
      ylab = "Number of genotypes")
-
-# extract bad markers
-remaining_markers_10pct <- length(which(percent_missing_marker > 10))/sum(n_mar(cross))
-bad_markers <- names(percent_missing_marker[which(percent_missing_marker > 10)])
 ```
 
 Of all markers, `r length(bad_markers)` markers were missing in at least 10% of samples.
@@ -421,8 +420,10 @@ FLAG_pct_miss <- data.frame(percent_missing_ind_cross[percent_missing_ind_cross 
   `colnames<-`(c("notes","sample")) %>%
   dplyr::mutate(notes = round(notes, 2),
                 notes = paste0(notes,"% of markers missing genotypes"))
-rownames(FLAG_pct_miss) <- NULL
-FLAG_pct_miss$flag_reason <- "missing genotypes"
+if(nrow(FLAG_pct_miss) > 1){
+  rownames(FLAG_pct_miss) <- NULL
+  FLAG_pct_miss$flag_reason <- "missing genotypes"
+}
 
 if(exists("sex_chr_flag_samples")){
   FLAG_sex_chr_int <- data.frame(sex_chr_flag_samples, "sex chromosome intensities missing") %>%
@@ -491,5 +492,4 @@ DT::datatable(data = wide_flag_report,
 
 # write flagged samples
 write.csv(flag_report, quote = F, row.names = F, file = "sample_QC.csv")
-saveRDS(bad_markers, file = "bad_markers.rds")
 ```

@@ -8,7 +8,7 @@ library(parallel)
 #
 # Sam Widmayer
 # samuel.widmayer@jax.org
-# 20241219
+# 20250602
 ################################################################################ 
 
 # # testing
@@ -73,19 +73,23 @@ alleleprobs <- qtl2::genoprob_to_alleleprob(probs = genoprobs,
                                             quiet = F)
 
 # calculate viterbi
-m <- qtl2::maxmarg(probs = genoprobs, minprob=0.5, map = cross$pmap, quiet = T)
+m <- qtl2::maxmarg(probs = genoprobs, minprob=0.5, quiet = T)
+
+# calculate kinship matrix
+k <- calc_kinship(genoprobs, type = "loco", quiet = FALSE, cores = parallel::detectCores())
+
+# identify missing marker genotypes in the cohort 
+percent_missing_marker <- qtl2::n_missing(cross, "marker", "prop")*100
+bad_markers <- names(percent_missing_marker[which(percent_missing_marker > 10)])
 
 # calculate genotyping errors
 e <- calc_errorlod(cross, genoprobs, cores = parallel::detectCores())
 
-# excluded samples for QC
-excluded_samples_list <- list.files(pattern = "excluded_samples")
-excluded_samples <- Reduce(rbind,lapply(excluded_samples_list, read.csv))
-
 # save
 saveRDS(cross, file = "cross.rds")
-saveRDS(genoprobs, file = "genoprobs.rds", compress = "gzip")
-saveRDS(alleleprobs, file = "alleleprobs.rds", compress = "gzip")
-saveRDS(m, file = "maxmarg.rds", compress = "gzip")
-saveRDS(e, file = "genotyping_errors.rds", compress = "gzip")
-write.csv(excluded_samples, file = "excluded_samples.csv", row.names = F, quote = F)
+saveRDS(genoprobs, file = "genoprobs.rds", compress = TRUE)
+saveRDS(alleleprobs, file = "alleleprobs.rds", compress = TRUE)
+saveRDS(m, file = "maxmarg.rds", compress = TRUE)
+saveRDS(e, file = "genotyping_errors.rds", compress = TRUE)
+saveRDS(k, file = "kinship.rds", compress = TRUE)
+saveRDS(bad_markers, file = "bad_markers.rds")

@@ -9,10 +9,10 @@ process GENOPROBS {
   container 'docker://sjwidmay/lcgbs_hr:latest'
 
   input:
-  tuple path(cross), val(project_id), file(excluded_samples)
+  tuple val(project_id), path(cross)
 
   output:
-  tuple file(cross), val(project_id), file(excluded_samples), file("*.rds"), emit: genoprobs
+  tuple val(project_id), file(cross), file("*.rds"), emit: genoprobs
 
   script:
   

@@ -8,12 +8,12 @@ process WRITE_CROSS {
   container 'docker://sjwidmay/lcgbs_hr:latest'
 
   input:
-  tuple file(covar), val(project_id), val(cross_type)
-  tuple path(sampleGenos), file(excluded_samples)
+  tuple val(project_id), path(covar), val(cross_type), path(dedup_samples)
+  tuple val(project_id), path(sampleGenos)
   path(consensusFiles)
 
   output:
-  tuple path("*.rds"), val(project_id), file("excluded_samples_*"), emit: cross
+  tuple val(project_id), path("*.rds"), emit: cross
 
   script:
   """
@@ -22,6 +22,5 @@ process WRITE_CROSS {
   echo \$hash
   Rscript --vanilla ${projectDir}/bin/scripts/qtl2/writeControlFile.R
   mv preQC_cross.rds preQC_cross_\${hash}.rds
-  mv excluded_samples.csv excluded_samples_\${hash}.csv
   """
 }

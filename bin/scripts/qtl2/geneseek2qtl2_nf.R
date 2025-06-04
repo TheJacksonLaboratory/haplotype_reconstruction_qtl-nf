@@ -13,36 +13,37 @@ cat(paste0(" -- R/qtl2convert version: ",packageVersion("qtl2convert"),"\n"))
 
 # allele codes
 codefile <- args[1]
+# codefile <- "/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/bin/CC_DO_data/GM_allelecodes.csv"
+
 
 # metadata file indicating which mice should be retained from array files
 metadata_path <- args[2]
+# metadata_path <- "/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/sample_sheets/20250509_attie_covar.csv"
 
 # FinalReport files
 ifile <- args[3]
+# ifile <- "/projects/compsci/vmp/USERS/widmas/attie_500/data/genotypes/Univ_of_Wisconsin_Schueler_MURGIGV01_20221021/Univ_of_Wisconsin_Schueler_MURGIGV01_20221021_FinalReport.zip"
 
 # max percent missing threshold
 max_pct_missing = as.numeric(args[4])
-cat(paste0(" -- Maximum missing markers allowed = ",max_pct_missing*100,"%\n"))
 # max_pct_missing = 0.12
-
-# testing:
-# test_dir <- "/flashscratch/widmas/HR_QC_outputDir/work/41/e1f8975565911a9ee7ecb2332086ba"
-# GM_ref_dir    <-    "/projects/compsci/vmp/USERS/widmas/haplotype_reconstruction_qtl-nf/bin/CC_DO_data"
-# metadata_path <-    list.files(test_dir, pattern = "covar")[1]
-# ifile        <-    list.files(test_dir, pattern = ".zip")
-# setwd(test_dir)
-
-
+cat(paste0(" -- Maximum missing markers allowed = ",max_pct_missing*100,"%\n"))
 
 cat("Reading covar file")
 metadata <- read.csv(metadata_path, tryLogical = F)
 metadata$id <- as.character(metadata$id)
+if("include" %in% colnames(metadata)){
+  cat(" -'include' field detected in metadata file.\n")
+  cat(" -Filtering metadata to included samples\n")
+  metadata <- metadata %>%
+    dplyr::filter(include == TRUE)
+}
 
 # read genotype codes
 codes <- data.table::fread(codefile, skip = 3, data.table = F)
 
-# make excluded samples object
-excluded_samples <- NULL
+# # make excluded samples object
+# excluded_samples <- NULL
 
 ## MAIN ##
 cat(" -Reading data\n")
@@ -85,14 +86,14 @@ for(i in seq(along=samples)) {
 cat(" -Encode genotypes\n")
 geno <- qtl2convert::encode_geno(geno, as.matrix(codes[,c("A","B")]))
   
-# find samples with lots of missing genos off the bat
-cat(" -Identifying samples exceeding missing genotype threshold\n")
-missing_geno_samples <- which(colSums(geno == "-")/nrow(geno) > max_pct_missing)
-cat(paste0("  ",length(missing_geno_samples)," samples missing more than ",max_pct_missing*100,"% of genotypes \n"))
-if(length(missing_geno_samples) > 0){
-  geno <- geno[,-missing_geno_samples]
-  excluded_samples <- missing_geno_samples
-}
+# # find samples with lots of missing genos off the bat
+# cat(" -Identifying samples exceeding missing genotype threshold\n")
+# missing_geno_samples <- which(colSums(geno == "-")/nrow(geno) > max_pct_missing)
+# cat(paste0("  ",length(missing_geno_samples)," samples missing more than ",max_pct_missing*100,"% of genotypes \n"))
+# if(length(missing_geno_samples) > 0){
+#   geno <- geno[,-missing_geno_samples]
+#   excluded_samples <- missing_geno_samples
+# }
 
 
 # make matrix of X intensities for sex checks
@@ -111,6 +112,7 @@ gY <- g_2 %>%
 cY <- matrix(nrow=sum(codes$chr=="Y"),
              ncol=length(samples))
 dimnames(cY) <- list(codes[which(codes$chr == "Y"),]$marker, samples)
+
 for(i in seq(along=samples)) {
   if(i==round(i,-1)) cat(" --Sample", i, "of", length(samples), "\n")
   wh <- (gX[,"Sample ID"]==samples[i])
@@ -175,11 +177,11 @@ filtered_meta <- metadata %>%
   dplyr::mutate(provided_sex = sex)
 write.csv(filtered_meta, "covar.csv", quote = F, row.names = F)
 
-if(is.null(excluded_samples)){
-  ex_s <- data.frame(ifile, NA)
-  colnames(ex_s) <- c("FinalReport","excluded_samples")
-} else {
-  ex_s <- data.frame(ifile, names(excluded_samples))
-  colnames(ex_s) <- c("FinalReport","excluded_samples")
-}
-write.csv(ex_s, "excluded_samples.csv", quote = F, row.names = F)
+# if(is.null(excluded_samples)){
+#   ex_s <- data.frame(ifile, NA)
+#   colnames(ex_s) <- c("FinalReport","excluded_samples")
+# } else {
+#   ex_s <- data.frame(ifile, names(excluded_samples))
+#   colnames(ex_s) <- c("FinalReport","excluded_samples")
+# }
+# write.csv(ex_s, "excluded_samples.csv", quote = F, row.names = F)

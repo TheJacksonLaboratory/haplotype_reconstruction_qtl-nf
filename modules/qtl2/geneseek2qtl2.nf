@@ -8,13 +8,13 @@ process GS_TO_QTL2 {
   container 'docker://sjwidmay/lcgbs_hr:latest'
 
   input:
-  tuple path(finalreport_files), val(project_id), path(covar_file), val(cross_type)
+  tuple val(project_id), path(finalreport_files), path(covar_file), val(cross_type)
 
   output:
-  tuple path("*geno*.csv"), file("excluded_samples.csv"), emit: sampleGenos
-  tuple file("covar.csv"), val(project_id), val(cross_type), emit: qtl2meta
-  tuple path("*int.csv"), val(project_id), emit: qtl2ints
-  tuple path("*.fst"), val(project_id), emit: qtl2intsfst
+  tuple val(project_id), path("*geno*.csv"), emit: sampleGenos
+  tuple val(project_id), file("*covar.csv"), val(cross_type), emit: qtl2meta
+  tuple val(project_id), path("*int.csv"), emit: qtl2ints
+  tuple val(project_id), path("*.fst"), emit: qtl2intsfst
 
 
   script:
@@ -28,6 +28,7 @@ process GS_TO_QTL2 {
   current_dir=\$(echo pwd)
   hash=\$(\$current_dir | tail -c 9)
   mv intensities.fst intensities_\${hash}.fst
+  mv covar.csv \${hash}_covar.csv
   mv chrYint.csv chrY_\${hash}_int.csv
   mv chrXint.csv chrX_\${hash}_int.csv
   """
